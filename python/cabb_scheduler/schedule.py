@@ -22,6 +22,14 @@ class schedule:
             scan_new.setCalCode(scan_old.getCalCode())
             scan_new.setScanLength(scan_old.getScanLength())
             scan_new.setScanType(scan_old.getScanType())
+            scan_new.setPointing(scan_old.getPointing())
+            scan_new.setObserver(scan_old.getObserver())
+            scan_new.setProject(scan_old.getProject())
+            scan_new.setTime(scan_old.getTime())
+            scan_new.setTimeCode(scan_old.getTimeCode())
+            scan_new.setDate(scan_old.getDate())
+            scan_new.setAveraging(scan_old.getAveraging())
+            scan_new.setEnvironment(scan_old.getEnvironment())
         
         # Check for options for the scan.
         if 'source' in options:
@@ -38,6 +46,22 @@ class schedule:
             scan_new.setScanLength(options['scanLength'])
         if 'scanType' in options:
             scan_new.setScanType(options['scanType'])
+        if 'pointing' in options:
+            scan_new.setPointing(options['pointing'])
+        if 'observer' in options:
+            scan_new.setObserver(options['observer'])
+        if 'project' in options:
+            scan_new.setProject(options['project'])
+        if 'time' in options:
+            scan_new.setTime(options['time'])
+        if 'timeCode' in options:
+            scan_new.setTimeCode(options['timeCode'])
+        if 'date' in options:
+            scan_new.setDate(options['date'])
+        if 'averaging' in options:
+            scan_new.setAveraging(options['averaging'])
+        if 'environment' in options:
+            scan_new.setEnvironment(options['environment'])
             
         # Add the scan to the list.
         self.scans.append(scan_new)
@@ -56,5 +80,20 @@ class schedule:
                     if (i == 0) or (self.scans[i].getRightAscension() !=
                                     self.scans[i - 1].getRightAscension()):
                         schedFile.write("RA=%s\n" % self.scans[i].getRightAscension())
+                    if (i == 0) or (self.scans[i].getDeclination() !=
+                                    self.scans[i - 1].getDeclination()):
+                        schedFile.write("Dec=%s\n" % self.scans[i].getDeclination())
+                    if (i == 0 and self.scans[i].getCalCode() != "") or (self.scans[i].getCalCode() !=
+                                                                         self.scans[i - 1].getCalCode()):
+                        schedFile.write("CalCode=%s\n" % self.scans[i].getCalCode())
+                    if (i == 0) or (self.scans[i].getScanLength() !=
+                                    self.scans[i - 1].getScanLength()):
+                        schedFile.write("ScanLength=%s\n" % self.scans[i].getScanLength())
+                    if (i == 0) or (self.scans[i].getScanType() !=
+                                    self.scans[i - 1].getScanType()):
+                        schedFile.write("ScanType=%s\n" % self.scans[i].getScanType())
+                    if (i == 0) or (self.scan[i].getPointing() !=
+                                    self.scans[i - 1].getPointing()):
+                        schedFile.write("Pointing=%s\n" % self.scans[i].getPointing())
                     schedFile.write("$SCANEND\n")
         return self

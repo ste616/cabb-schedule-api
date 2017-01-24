@@ -4,10 +4,11 @@ import errors
 
 class scan:
     def __init__(self):
-        # We put all the properties of the scan in a dictionary.
+        # We put all the properties of the scan in a dictionary, and store
+        # some necessary defaults.
         self.__scanDetails = { 'source': "",
-                               'rightAscension': "",
-                               'declination': "",
+                               'rightAscension': "00:00:00",
+                               'declination': "00:00:00",
                                'epoch': "J2000",
                                'calCode': "",
                                'scanLength': "00:10:00",
@@ -155,6 +156,58 @@ class scan:
                 self.__scanDetails['scanType'] = scanType
             else:
                 raise errors.ScanError("Unrecognised ScanType specified.")
+        return self
+
+    def setPointing(self, pointing=None):
+        if pointing is not None:
+            if pointing == "Global" or pointing == "Offset" or pointing == "Offpnt" or pointing == "Refpnt" or pointing == "Update":
+                self.__scanDetails['pointing'] = pointing
+            else:
+                raise errors.ScanError("Unrecognised Pointing specified.")
+        return self
+
+    def setObserver(self, observer=None):
+        if observer is not None:
+            self.__scanDetails['observer'] = observer
+        return self
+
+    def setProject(self, project=None):
+        if project is not None:
+            self.__scanDetails['project'] = project
+        return self
+
+    def setTime(self, intTime=None):
+        if intTime is not None:
+            self.__scanDetails['time'] = intTime
+        return self
+
+    def setTimeCode(self, timeCode=None):
+        if timeCode is not None:
+            if timeCode == "LST" or timeCode == "UTC":
+                self.__scanDetails['timeCode'] = timeCode
+            else:
+                raise errors.ScanError("Unrecognised TimeCode specified.")
+        return self
+
+    def setDate(self, startDate=None):
+        if startDate is not None:
+            self.__scanDetails['startDate'] = startDate
+        return self
+
+    def setAveraging(self, averaging=None):
+        if averaging is not None:
+            if averaging > 0:
+                self.__scanDetails['averaging'] = averaging
+            else:
+                raise errors.ScanError("Averaging must be a positive, non-zero number.")
+        return self
+
+    def setEnvironment(self, environment=None):
+        if environment is not None:
+            if environment >= 0 and environment < 128:
+                self.__scanDetails['environment'] = environment
+            else:
+                raise errors.ScanError("Environment must be an integer between 0 and 127 inclusive.")
         return self
 
     
