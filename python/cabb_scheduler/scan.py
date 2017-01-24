@@ -1,5 +1,6 @@
 # A scan has several required fields.
 from frequency_setup import frequency_setup
+import errors
 
 class scan:
     def __init__(self):
@@ -43,6 +44,9 @@ class scan:
     def getEpoch(self):
         return self.__scanDetails['epoch']
 
+    def getCalCode(self):
+        return self.__scanDetails['calCode']
+    
     def getScanLength(self):
         return self.__scanDetails['scanLength']
 
@@ -99,12 +103,58 @@ class scan:
     def getWrap(self):
         return self.__scanDetails['wrap']
 
+    def IF1(self):
+        return self.__scanDetails['setupF1']
+
+    def IF2(self):
+        return self.__scanDetails['setupF2']
+    
     def setSource(self, source_name=None):
         if source_name is not None:
-            self.__scanDetails['source'] = source_name
+            # Check for maximum length.
+            if len(source_name) <= 10:
+                self.__scanDetails['source'] = source_name
+            else:
+                raise errors.ScanError("Specified source name is too long.")
         return self
 
     def setRightAscension(self, ra=None):
         if ra is not None:
             self.__scanDetails['rightAscension'] = ra
         return self
+
+    def setDeclination(self, dec=None):
+        if dec is not None:
+            self.__scanDetails['declination'] = dec
+        return self
+
+    def setEpoch(self, epoch=None):
+        if epoch is not None:
+            if epoch == "J2000" or epoch == "B1950" or epoch == "AzEl" or epoch == "Galactic":
+                self.__scanDetails['epoch'] = epoch
+            else:
+                raise errors.ScanError("Unrecognised epoch specified.")
+        return self
+        
+    def setCalCode(self, calCode=None):
+        if calCode is not None:
+            if calCode == "" or calCode == "C" or calCode == "B":
+                self.__scanDetails['calCode'] = calCode
+            else:
+                raise errors.ScanError("Unrecognised CalCode specified.")
+        return self
+
+    def setScanLength(self, scanLength=None):
+        if scanLength is not None:
+            self.__scanDetails['scanLength'] = scanLength
+        return self
+
+    def setScanType(self, scanType=None):
+        if scanType is not None:
+            if scanType == "Normal" or scanType == "Dwell" or scanType == "Mosaic" or scanType == "Point" or scanType == "Paddle" or scanType == "OTFMos":
+                self.__scanDetails['scanType'] = scanType
+            else:
+                raise errors.ScanError("Unrecognised ScanType specified.")
+        return self
+
+    

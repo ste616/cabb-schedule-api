@@ -17,12 +17,27 @@ class schedule:
             scan_old = self.scans[-1]
             scan_new.setSource(scan_old.getSource())
             scan_new.setRightAscension(scan_old.getRightAscension())
+            scan_new.setDeclination(scan_old.getDeclination())
+            scan_new.setEpoch(scan_old.getEpoch())
+            scan_new.setCalCode(scan_old.getCalCode())
+            scan_new.setScanLength(scan_old.getScanLength())
+            scan_new.setScanType(scan_old.getScanType())
         
         # Check for options for the scan.
         if 'source' in options:
             scan_new.setSource(options['source'])
         if 'rightAscension' in options:
             scan_new.setRightAscension(options['rightAscension'])
+        if 'declination' in options:
+            scan_new.setDeclination(options['declination'])
+        if 'epoch' in options:
+            scan_new.setEpoch(options['epoch'])
+        if 'calCode' in options:
+            scan_new.setCalCode(options['calCode'])
+        if 'scanLength' in options:
+            scan_new.setScanLength(options['scanLength'])
+        if 'scanType' in options:
+            scan_new.setScanType(options['scanType'])
             
         # Add the scan to the list.
         self.scans.append(scan_new)
