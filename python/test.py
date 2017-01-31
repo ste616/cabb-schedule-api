@@ -13,3 +13,9 @@ except cabb.errors.ScanError as e:
     print "Caught exception: ", e.value
 
 testSchedule.write(name="test.sch")
+
+# Read an existing schedule.
+testSchedule.read("c2914_follow_cal.sch")
+# Output some things.
+print testSchedule.getScan(18).getSource()
+

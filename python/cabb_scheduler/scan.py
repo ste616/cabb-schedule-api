@@ -1,6 +1,7 @@
 # A scan has several required fields.
 from frequency_setup import frequency_setup
 import errors
+import re
 
 class scan:
     def __init__(self):
@@ -208,6 +209,58 @@ class scan:
                 self.__scanDetails['environment'] = environment
             else:
                 raise errors.ScanError("Environment must be an integer between 0 and 127 inclusive.")
+        return self
+
+    def setPointingOffset1(self, offset=None):
+        if offset is not None:
+            self.__scanDetails['pointingOffset1'] = offset
+        return self
+
+    def setPointingOffset2(self, offset=None):
+        if offset is not None:
+            self.__scanDetails['pointingOffset2'] = offset
+        return self
+
+    def setTvChannels(self, tvchan=None):
+        if tvchan is not None:
+            r = re.compile('^\d+\,\d+\,\d+\,\d+$')
+            if (r.match(tvchan) is not None) or (tvchan == 'default') or (tvchan == '') or (tvchan == 'null'):
+                self.__scanDetails['tvChannels'] = tvchan
+            else:
+                raise errors.ScanError("TV Channel specification is incorrect.")
+        return self
+
+    def setCommand(self, cmd=None):
+        if cmd is not None:
+            self.__scanDetails['command'] = cmd
+        return self
+
+    def setCatVel(self, vel=None):
+        if vel is not None:
+            self.__scanDetails['catVel'] = vel
+        return self
+
+    def setFreqConfig(self, config=None):
+        if config is not None:
+            r1 = re.compile('^Master\d+$')
+            r2 = re.compile('^Slave-\d+$')
+            if (r1.match(config) is not None) or (r2.match(config) is not None) or (config == "null"):
+                self.__scanDetails['freqConfig'] = config
+            else:
+                raise errors.ScanError("Frequency configuration is incorrectly specified.")
+        return self
+
+    def setComment(self, comment=None):
+        if comment is not None:
+            self.__scanDetails['comment'] = comment
+        return self
+
+    def setWrap(self, wrap=None):
+        if wrap is not None:
+            if (wrap == "North") or (wrap == "South") or (wrap == "Closest"):
+                self.__scanDetails['wrap'] = wrap
+            else:
+                raise errors.ScanError("Wrap is incorrectly specified.")
         return self
 
     
