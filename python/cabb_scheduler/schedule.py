@@ -65,6 +65,11 @@ class schedule:
 
         'Wrap': { 'format': "string", 'get': "getWrap", 'set': "setWrap", 'option': "wrap" }
     }
+
+    __freqHandlers = {
+        'Freq-1': { 'format': "integer", 'get': "getFreq", 'set': "setFreq", 'object': "IF1", 'option': "freq1" },
+        'Freq-2': { 'format': "integer", 'get': "getFreq", 'set': "setFreq", 'object': "IF2", 'option': "freq2" }
+    }
     
     def __init__(self):
         # This is the list of scans, in order.
@@ -75,6 +80,13 @@ class schedule:
         # Clear the schedule.
         self.scans = []
         return self
+
+    def __prepareValue(self, value, vtype):
+        if vtype == "integer":
+            return int(value)
+        elif vtype == "float":
+            return float(value)
+        return value
     
     def addScan(self, options={}):
         # Add a scan to the schedule.
@@ -85,12 +97,21 @@ class schedule:
             scan_old = self.scans[-1]
             for f in self.__scanHandlers:
                 getattr(scan_new, self.__scanHandlers[f]['set'])(getattr(scan_old, self.__scanHandlers[f]['get'])())
+            for f in self.__freqHandlers:
+                getattr(getattr(scan_new, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['set'])(
+                    getattr(getattr(scan_old, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['get'])())
         
         # Check for options for the scan.
         for f in self.__scanHandlers:
             if self.__scanHandlers[f]['option'] in options:
-                getattr(scan_new, self.__scanHandlers[f]['set'])(options[self.__scanHandlers[f]['option']])
-            
+                val = self.__prepareValue(options[self.__scanHandlers[f]['option']], self.__scanHandlers[f]['format'])
+                getattr(scan_new, self.__scanHandlers[f]['set'])(val)
+
+        for f in self.__freqHandlers:
+            if self.__freqHandlers[f]['option'] in options:
+                val = self.__prepareValue(options[self.__freqHandlers[f]['option']], self.__freqHandlers[f]['format'])
+                getattr(getattr(scan_new, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['set'])(val)
+                
         # Add the scan to the list.
         self.scans.append(scan_new)
             
@@ -151,4 +172,5 @@ class schedule:
                         els = line.split("=")
                         if els[0] in self.__scanHandlers:
                             scanDetails[self.__scanHandlers[els[0]]['option']] = els[1]
-                        
+                        elif els[0] in self.__freqHandlers:
+                            scanDetails[self.__freqHandlers[els[0]]['option']] = els[1]

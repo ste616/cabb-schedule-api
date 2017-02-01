@@ -4,9 +4,9 @@ import errors
 
 class frequency_setup:
     def __init__(self):
-        self.__setupDetails = { 'continuumCentre': 0, 'channelBandwidth': 1,
+        # Some valid and necessary defaults.
+        self.__setupDetails = { 'continuumCentre': 2100, 'channelBandwidth': 1,
                                 'zooms': [] }
-        return None
 
     def __frequencyToBand(self, cfreq=None):
         # Return the band that would satisfy the specified continuum centre frequency.
@@ -40,7 +40,7 @@ class frequency_setup:
         if cfreq is not None:
             if self.__frequencyToBand(cfreq) is not None:
                 # Valid frequency.
-                self.setupDetails['continuumCentre'] = cfreq
+                self.__setupDetails['continuumCentre'] = cfreq
             else:
                 raise errors.FrequencyError("Specified continuum centre frequency is not achievable.")
         return self

@@ -4,7 +4,7 @@ import cabb_scheduler as cabb
 
 # Make a new schedule.
 testSchedule = cabb.schedule()
-scan1 = testSchedule.addScan({ 'source': "1934-638", 'rightAscension': "19:39:25.026" })
+scan1 = testSchedule.addScan({ 'source': "1934-638", 'rightAscension': "19:39:25.026", 'freq1': 5500, 'freq2': 9000 })
 scan2 = testSchedule.addScan()
 scan3 = testSchedule.addScan({ 'source': "0823-500", 'rightAscension': "08:25:26.869" })
 try:
@@ -17,5 +17,7 @@ testSchedule.write(name="test.sch")
 # Read an existing schedule.
 testSchedule.read("c2914_follow_cal.sch")
 # Output some things.
-print testSchedule.getScan(18).getSource()
+a = testSchedule.getScan(18)
+print a.getSource()
+print a.IF1().getFreq()
 
