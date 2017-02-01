@@ -127,12 +127,21 @@ class schedule:
         if idx is not None:
             return self.scans[idx]
             
-    def __outputScheduleLine(self, s, n, fn, fm):
+    def __outputScheduleLine(self, s, o, p, fn, fm):
         # Generic checker for line output to schedule.
-        if (n == 0) or (getattr(self.scans[n], fn)() !=
-                        getattr(self.scans[n - 1], fn)()):
-            s.write(fm % getattr(self.scans[n], fn)())
+        if (p is None) or (getattr(o, fn)() !=
+                           getattr(p, fn)()):
+            s.write(fm % getattr(o, fn)())
 
+    def __formatSpecifier(self, fmt):
+        if fmt == "string":
+            return "%s"
+        elif fmt == "float":
+            return "%.3f"
+        elif fmt == "integer":
+            return "%d"
+        else:
+            return "%s"
             
     def write(self, name=None):
         # Write out the schedule to disk.
@@ -141,14 +150,20 @@ class schedule:
                 for i in xrange(0, len(self.scans)):
                     schedFile.write("$SCAN*V5\n")
                     for h in self.__scanHandlers:
-                        outf = h + "="
-                        if self.__scanHandlers[h]['format'] == "string":
-                            outf += "%s"
-                        elif self.__scanHandlers[h]['format'] == "float":
-                            outf += "%.3f"
-                        outf += "\n"
-                        self.__outputScheduleLine(schedFile, i, self.__scanHandlers[h]['get'], outf)
-
+                        outf = h + "=" + self.__formatSpecifier(self.__scanHandlers[h]['format']) + "\n"
+                        prevScan = None
+                        if i > 0:
+                            prevScan = self.scans[i - 1]
+                        self.__outputScheduleLine(schedFile, self.scans[i], prevScan,
+                                                  self.__scanHandlers[h]['get'], outf)
+                    for h in self.__freqHandlers:
+                        outf = h + "=" + self.__formatSpecifier(self.__freqHandlers[h]['format']) + "\n"
+                        prevScan = None
+                        if i > 0:
+                            prevScan = getattr(self.scans[i - 1], self.__freqHandlers[h]['object'])()
+                        self.__outputScheduleLine(schedFile,
+                                                  getattr(self.scans[i], self.__freqHandlers[h]['object'])(),
+                                                  prevScan, self.__freqHandlers[h]['get'], outf)
                     schedFile.write("$SCANEND\n")
         return self
 
