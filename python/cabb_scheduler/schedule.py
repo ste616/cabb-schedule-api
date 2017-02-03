@@ -1,6 +1,7 @@
 # A schedule is a collection of scans, so the schedule class
 # doesn't do much. But we do keep track of certain constants.
 from scan import scan
+import re
 
 class schedule:
     # A list of all the fields we need to know about.
@@ -182,6 +183,7 @@ class schedule:
                     elif line == "$SCANEND":
                         # Make the new scan.
                         self.addScan(scanDetails)
+                    elif 
                     else:
                         # Add to the scan options object.
                         els = line.split("=")

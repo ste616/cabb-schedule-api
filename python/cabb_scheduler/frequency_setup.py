@@ -3,13 +3,20 @@ from zoom import zoom
 import errors
 
 class frequency_setup:
-    def __init__(self):
+    def __init__(self, parent):
+        self.__parent = parent
         # Some valid and necessary defaults.
         self.__setupDetails = { 'continuumCentre': 2100, 'channelBandwidth': 1,
                                 'zooms': [] }
+        # Assign all the zooms.
+        for i in xrange(0, 16):
+            self.__setupDetails['zooms'].append(zoom(self))
 
     def __frequencyToBand(self, cfreq=None):
         # Return the band that would satisfy the specified continuum centre frequency.
+        if cfreq is None:
+            cfreq = self.__setupDetails['continuumCentre']
+
         if cfreq is not None:
             if (cfreq >= 1728 and cfreq <= 2882):
                 return "16cm"
@@ -29,11 +36,40 @@ class frequency_setup:
     def getChannelWidth(self):
         return self.__setupDetails['channelBandwidth']
 
+    def getSideband(self):
+        return self.__parent.getSideband()
+        
     def getZoom(self, idx=None):
-        if idx is not None:
-            return self.__setupDetails['zooms'][idx]
+        if idx is not None and idx >= 0 and idx < 16:
+            if (self.__setupDetails['zooms'][idx].isEnabled):
+                return self.__setupDetails['zooms'][idx]
         return None
 
+    def getNZooms(self):
+        # Return the number of zoom channels currently in use.
+        tw = 0
+        for i in xrange(0, len(self.__setupDetails['zooms'])):
+            if (self.__setupDetails['zooms'][i].isEnabled):
+                tw += 1
+        return tw
+    
+    def addZoom(self, options=None):
+        # Check we don't already have all the zooms.
+        nZooms = self.getNZooms()
+        if nZooms >= 16:
+            raise ZoomError("All zooms have already been allocated.")
+        if (options is not None) and ('width' in options):
+            if (options['width'] + nZooms) > 16:
+                raise ZoomError("Cannot allocate more than 16 zooms.")
+        self.__setupDetails['zooms'].append(zoom(self))
+        if (options is not None) and ('width' in options):
+            self.__setupDetails['zooms'][-1].setWidth(options['width'])
+        if (options is not None) and ('freq' in options):
+            self.__setupDetails['zooms'][-1].setFreq(options['freq'])
+        if (options is not None) and ('chan' in options):
+            self.__setupDetails['zooms'][-1].setChannel(options['chan'])
+        return self
+    
     def setFreq(self, cfreq=None):
         # Set the continuum centre-channel frequency, in MHz.
         # We also check whether the setting is valid.

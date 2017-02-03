@@ -31,8 +31,8 @@ class scan:
                                'freqConfig': "null",
                                'comment': "",
                                'wrap': "Closest",
-                               'setupF1': frequency_setup(),
-                               'setupF2': frequency_setup() }
+                               'setupF1': frequency_setup(self),
+                               'setupF2': frequency_setup(self) }
 
     def getSource(self):
         return self.__scanDetails['source']
@@ -110,6 +110,36 @@ class scan:
 
     def IF2(self):
         return self.__scanDetails['setupF2']
+
+    def getSideband(self):
+        fband = self.__scanDetails['setupF1'].__frequencyToBand()
+        if fband == "16cm":
+            return -1
+        elif fband == "4cm":
+            return 1
+        elif fband == "15mm":
+            return -1
+        elif fband == "7mm":
+            if self.__scanDetails['setupF1'].getFreq() < 40673:
+                return -1
+            else:
+                return 1
+        elif fband == "3mm":
+            f1 = self.scanDetails['setupF1'].getFreq()
+            f2 = self.scanDetails['setupF2'].getFreq()
+            hif = f2
+            lof = f1
+            if (f2 < f1):
+                hif = f1
+                lof = f2
+            if ((lof > 97800) and (hif > 100600)):
+                return 1
+            elif ((hif > 100600) and (lof < 97800)):
+                return -1
+            elif ((lof < 97800) and (hif < 100600)):
+                return -1
+            else:
+                return -1
     
     def setSource(self, source_name=None):
         if source_name is not None:
