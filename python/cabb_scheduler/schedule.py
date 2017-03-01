@@ -127,7 +127,7 @@ class schedule:
         # Return the scan specified.
         if idx is not None:
             return self.scans[idx]
-            
+
     def __outputScheduleLine(self, s, o, p, fn, fm):
         # Generic checker for line output to schedule.
         if (p is None) or (getattr(o, fn)() !=
@@ -183,7 +183,6 @@ class schedule:
                     elif line == "$SCANEND":
                         # Make the new scan.
                         self.addScan(scanDetails)
-                    elif 
                     else:
                         # Add to the scan options object.
                         els = line.split("=")

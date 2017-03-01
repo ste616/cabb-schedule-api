@@ -2,6 +2,7 @@
 from frequency_setup import frequency_setup
 import errors
 import re
+import calibrator_database
 
 class scan:
     def __init__(self):
@@ -293,4 +294,7 @@ class scan:
                 raise errors.ScanError("Wrap is incorrectly specified.")
         return self
 
-    
+    def findCalibrator(self, distance=20):
+        # Search the ATCA calibrator database for a nearby calibrator.
+        calibrator_database.coneSearch(self.getRightAscension(), self.getDeclination(), distance)
+        
