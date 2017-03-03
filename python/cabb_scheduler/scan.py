@@ -296,5 +296,5 @@ class scan:
 
     def findCalibrator(self, distance=20):
         # Search the ATCA calibrator database for a nearby calibrator.
-        calibrator_database.coneSearch(self.getRightAscension(), self.getDeclination(), distance)
+        return calibrator_database.coneSearch(self.getRightAscension(), self.getDeclination(), distance)
         
