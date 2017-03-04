@@ -128,17 +128,17 @@ class calibrator:
                                                           float(r2['fluxdensity_vector_averaged'])) - 1)
                     arraySpecs[arr][b]['fluxDensities'].append(__model2FluxDensity(r2['fluxdensity_fit_coeff'],
                                                                                    bandEvals[b]))
-                if len(arraySpecs[arr][b]['closurePhases']) > 0:
-                    arraySpecs[arr][b]['closurePhaseMedian'] = np.median(arraySpecs[arr][b]['closurePhases'])
-                if len(arraySpecs[arr][b]['defects']) > 0:
-                    arraySpecs[arr][b]['defectMedian'] = np.median(arraySpecs[arr][b]['defects'])
-                if len(arraySpecs[arr][b]['fluxDensities']) > 0:
-                    arraySpecs[arr][b]['fluxDensityMedian'] = np.median(arraySpecs[arr][b]['fluxDensities'])
-                    arraySpecs[arr][b]['fluxDensityStdDev'] = np.std(arraySpecs[arr][b]['fluxDensities'])
         # The collation is done, we make some evaluations.
         for a in arraySpecs:
             for b in bandNames:
                 r = arraySpecs[a][b]
+                if len(r['closurePhases']) > 0:
+                    r['closurePhaseMedian'] = np.median(r['closurePhases'])
+                if len(r['defects']) > 0:
+                    r['defectMedian'] = np.median(r['defects'])
+                if len(r['fluxDensities']) > 0:
+                    r['fluxDensityMedian'] = np.median(r['fluxDensities'])
+                    r['fluxDensityStdDev'] = np.std(r['fluxDensities'])
                 if (r['closurePhaseMedian'] is not None and r['defectMedian'] is not None and
                     r['fluxDensityMedian'] is not None and r['fluxDensityStdDev'] is not None):
                     r['qualityFlag'] = 4 # The maximum value.
