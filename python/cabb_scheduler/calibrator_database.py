@@ -5,6 +5,12 @@ import json
 import numpy as np
 import errors
 
+arrayNames = { '6A': "6km", '6B': "6km", '6C': "6km", '6D': "6km",
+               '1.5A': "1.5km", '1.5B': "1.5km", '1.5C': "1.5km", '1.5D': "1.5km",
+               '750A': "750m", '750B': "750m", '750C': "750m", '750D': "750m",
+               'EW367': "small", 'EW352': "small",
+               'H214': "small", 'H168': "small", 'H75': "small" }
+
 class calibrator:
     def __init__(self, details=None):
         # This is a single calibrator from the database.
@@ -13,7 +19,8 @@ class calibrator:
             'rightAscension': "",
             'declination': "",
             'fluxDensities': [],
-            'measurements': None
+            'measurements': None,
+            'qualities': None
         }
         if details is not None:
             if 'name' in details:
@@ -84,6 +91,35 @@ class calibrator:
             self.__calibratorDetails['measurements'] = response['measurements']
         return self
 
+    def fetchQualities(self):
+        # Get the quality metric for this calibrator.
+        if self.__calibratorDetails['qualities'] is not None:
+            # We already have the qualities.
+            return self
+
+        data = { 'action': "source_quality", 'source': self.__calibratorDetails['name'] }
+        response = __communications(data, "json")
+        if response is not None and self.__calibratorDetails['name'] in response:
+            self.__calibratorDetails['qualities'] = response[self.__calibratorDetails['name']]
+            for a in self.__calibratorDetails['qualities']:
+                for b in self.__calibratorDetails['qualities'][a]:
+                    if self.__calibratorDetails['qualities'][a][b] is not None:
+                        self.__calibratorDetails['qualities'][a][b] = int(self.__calibratorDetails['qualities'][a][b])
+        return self
+
+    def getQuality(self, array=None, band=None):
+        if array is None:
+            return self.__calibratorDetails['qualities']
+        elif band is None:
+            if array in self.__calibratorDetails['qualities']:
+                return self.__calibratorDetails['qualities'][array]
+            return self.__calibratorDetails['qualities']
+        if array in self.__calibratorDetails['qualities']:
+            if band in self.__calibratorDetails['qualities'][array]:
+                return self.__calibratorDetails['qualities'][array][band]
+            return self.__calibratorDetails['qualities'][array]
+        return self.__calibratorDetails['qualities']
+    
     def collateDetails(self):
         # Take all the measurements and determine some secondary properties from them.
         if self.__calibratorDetails['measurements'] is None:
@@ -91,11 +127,6 @@ class calibrator:
             return self
 
         # Go through all of the measurements.
-        arrayNames = { '6A': "6km", '6B': "6km", '6C': "6km", '6D': "6km",
-                       '1.5A': "1.5km", '1.5B': "1.5km", '1.5C': "1.5km", '1.5D': "1.5km",
-                       '750A': "750m", '750B': "750m", '750C': "750m", '750D': "750m",
-                       'EW367': "small", 'EW352': "small",
-                       'H214': "small", 'H168': "small", 'H75': "small" }
         bandNames = [ "16cm", "4cm", "15mm", "7mm", "3mm" ]
         bandEvals = { "16cm": 2100, "4cm": 5500, "15mm": 17000, "7mm": 33000, "3mm": 93000 }
         arraySpecs = {}
@@ -155,29 +186,93 @@ class calibrator:
 class calibratorSearchResponse:
     def __init__(self):
         # A list of sources returned from a calibrator search.
-        self.__calibratorList = []
+        self.__calibrators = { 'list': [], 'bestIndex': None }
 
     def addCalibrator(self, calibratorDetails=None, distance=None):
         # Create a new calibrator.
         if (calibratorDetails is not None and distance is not None):
             nc = calibrator(calibratorDetails)
-            self.__calibratorList.append({ 'calibrator': nc, 'distance': float(distance) })
-            nc.fetchDetails().collateDetails()
+            self.__calibrators['list'].append({ 'calibrator': nc, 'distance': float(distance) })
             return nc
         else:
             return None
 
     def getCalibrator(self, index=None):
-        if index is not None and index >= 0 and index < len(self.__calibratorList):
-            return self.__calibratorList[index]
+        if index is not None and index >= 0 and index < len(self.__calibrators['list']):
+            return self.__calibrators['list'][index]
         return None
 
     def numCalibrators(self):
-        return len(self.__calibratorList)
+        return len(self.__calibrators['list'])
 
     def getAllCalibrators(self):
-        return self.__calibratorList
+        return self.__calibrators['list']
 
+    def selectBest(self, array=None):
+        # Choose the best calibrator from this list.
+        # We do this by looking for the nearest calibrator with quality 4 in the
+        # band that we are using.
+        # We need to know the array.
+        if array is None:
+            array = "6km"
+        elif array in arrayNames:
+            array = arrayNames[array]
+        
+        # Work out the band first.
+        firstFrequency = self.__calibrators['list'][0]['calibrator'].getFluxDensities()[0]['frequency']
+        bandName = __frequency2BandName(firstFrequency)
+        desiredScore = 4
+        calFound = False
+        calFd = None
+        while (calFound == False and desiredScore > 1):
+            for i in xrange(0, len(self.__calibrators['list'])):
+                tcal = self.__calibrators['list'][i]['calibrator']
+                tFd = tcal.getFluxDensities(firstFrequency)[0]['fluxDensity']
+                if tcal is not None and (calFound == False or
+                                         (calFound == True and tFd >= 2 * calFd and
+                                          self.__calibrators['list'][i]['distance'] < 10)):
+                    tcal.fetchQualities()
+                    tqual = tcal.getQuality(array, bandName)
+                    if (tqual == desiredScore):
+                        if self.__calibrators['bestIndex'] is None:
+                            self.__calibrators['bestIndex'] = i
+                            calFd = tFd
+                            calFound = True
+                        elif (tFd >= (2 * calFd) and self.__calibrators['list'][i]['distance'] < 10):
+                            # We will accept a calibrator further away, if it is much brighter.
+                            self.calibrators['bestIndex'] = i
+                            calFd = tFd
+            desiredScore -= 1
+                                
+        return self
+
+    def getBestCalibrator(self, array=None):
+        if self.__calibrators['bestIndex'] is None:
+            self.selectBest(array)
+
+        if self.__calibrators['bestIndex'] is not None:
+            return self.getCalibrator(self.__calibrators['bestIndex'])
+
+        return None
+
+def __frequency2BandName(frequency=None):
+    # Take a frequency in MHz and return the band it would be in.
+    if frequency is not None:
+        if frequency < 3100:
+            return "16cm"
+        if frequency < 12000:
+            return "4cm"
+        if frequency < 27000:
+            return "15mm"
+        if frequency < 52000:
+            return "7mm"
+        if frequency < 106000:
+            return "3mm"
+        return None
+
+def _calibratorSearchResponse__frequency2BandName(frequency=None):
+    return __frequency2BandName(frequency)
+    
 def __model2FluxDensity(model=None, frequency=None):
     # Convert an array of model parameters into a flux density.
     # The frequency should be given in MHz.
@@ -235,7 +330,6 @@ def coneSearch(ra=None, dec=None, radius=None, fluxLimit=None, frequencies=None)
         data['theta'] = radius
         data['frequencies'] = ",".join(frequencies)
         data['flimit'] = fluxLimit
-    print data
         
     xmlresponse = __communications(data, "xml")
     sourceList = xmlresponse.getElementsByTagName('source')

@@ -12,17 +12,18 @@ try:
 except cabb.errors.ScanError as e:
     print "Caught exception: ", e.value
 calList = scan3.findCalibrator()
-for i in xrange(0, calList.numCalibrators()):
-    pcal = calList.getCalibrator(i)
-    if pcal is not None:
-        calObj = pcal['calibrator']
-        fds = calObj.getFluxDensities()
-        fdStrings = []
-        for j in xrange(0, len(fds)):
-            fdStrings.append("%d MHz = %.3f Jy" % (fds[j]['frequency'], fds[j]['fluxDensity']))
-        print " calibrator %s, (%s / %s) [ %s ] { %.2f deg }" % (
-            calObj.getName(), calObj.getRightAscension(), calObj.getDeclination(),
-            ", ".join(fdStrings), pcal['distance'])
+bestCal = calList.getBestCalibrator()
+#for i in xrange(0, calList.numCalibrators()):
+#    pcal = calList.getCalibrator(i)
+if bestCal is not None:
+    calObj = bestCal['calibrator']
+    fds = calObj.getFluxDensities()
+    fdStrings = []
+    for j in xrange(0, len(fds)):
+        fdStrings.append("%d MHz = %.3f Jy" % (fds[j]['frequency'], fds[j]['fluxDensity']))
+    print " calibrator %s, (%s / %s) [ %s ] { %.2f deg }" % (
+        calObj.getName(), calObj.getRightAscension(), calObj.getDeclination(),
+        ", ".join(fdStrings), bestCal['distance'])
 
 testSchedule.write(name="test.sch")
 
