@@ -97,7 +97,9 @@ class schedule:
         if (not ('nocopy' in options and options['nocopy'] == True)) and (len(self.scans) > 0):
             scan_old = self.scans[-1]
             for f in self.__scanHandlers:
-                getattr(scan_new, self.__scanHandlers[f]['set'])(getattr(scan_old, self.__scanHandlers[f]['get'])())
+                # We don't copy the CalCode.
+                if (f != "CalCode"):
+                    getattr(scan_new, self.__scanHandlers[f]['set'])(getattr(scan_old, self.__scanHandlers[f]['get'])())
             for f in self.__freqHandlers:
                 getattr(getattr(scan_new, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['set'])(
                     getattr(getattr(scan_old, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['get'])())
@@ -114,10 +116,50 @@ class schedule:
                 getattr(getattr(scan_new, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['set'])(val)
                 
         # Add the scan to the list.
-        self.scans.append(scan_new)
+        if ('insertIndex' in options and options['insertIndex'] >= 0):
+            # We have been asked to insert the scan at a particular position.
+            # Check if the insertIndex is too large.
+            if (options['insertIndex'] >= len(self.scans)):
+                self.scans.append(scan_new)
+            else:
+                self.scans.insert(options['insertIndex'], scan_new)
+        else:
+            self.scans.append(scan_new)
             
         return scan_new
 
+    def addCalibrator(self, calibrator=None, refScan=None, options={}):
+        # Add a calibrator database calibrator to the schedule.
+        if calibrator is None or refScan is None:
+            return None
+
+        # We attach the calibrator to the source scans that match the details
+        # passed in as the refScan. So we first find which scans match.
+        # We match only on source name, position and frequency configuration.
+        matchedScans = []
+        for i in xrange(0, len(self.scans)):
+            if (self.scans[i].getSource() == refScan.getSource() and
+                self.scans[i].getRightAscension() == refScan.getRightAscension() and
+                self.scans[i].getDeclination() == refScan.getDeclination() and
+                self.scans[i].IF1().getFreq() == refScan.IF1().getFreq() and
+                self.scans[i].IF2().getFreq() == refScan.IF2().getFreq()):
+                matchedScans.append(i)
+        # We place the calibrator scan before each of the matched scans.
+        for i in xrange(0, len(matchedScans)):
+            # Remember, the index of the matched scan will go up by one every time
+            # we put a new scan in before it.
+            ni = i + matchedScans[i]
+            noptions = options
+            noptions['source'] = calibrator.getName()
+            noptions['rightAscension'] = calibrator.getRightAscension()
+            noptions['declination'] = calibrator.getDeclination()
+            noptions['freq1'] = self.scans[ni].IF1().getFreq()
+            noptions['freq2'] = self.scans[ni].IF2().getFreq()
+            noptions['calCode'] = "C"
+            noptions['insertIndex'] = ni
+            self.addScan(noptions)
+        return None
+    
     def deleteScan(self, idx=None):
         # Delete a scan from the schedule, using the Python del indexing standard.
         if idx is not None:

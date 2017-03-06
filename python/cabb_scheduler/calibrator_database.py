@@ -240,7 +240,7 @@ class calibratorSearchResponse:
                             calFound = True
                         elif (tFd >= (2 * calFd) and self.__calibrators['list'][i]['distance'] < 10):
                             # We will accept a calibrator further away, if it is much brighter.
-                            self.calibrators['bestIndex'] = i
+                            self.__calibrators['bestIndex'] = i
                             calFd = tFd
             desiredScore -= 1
                                 

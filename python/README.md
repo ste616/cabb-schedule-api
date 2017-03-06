@@ -1,5 +1,5 @@
-# ATCA schedule preparation library, including calibrator database interface.
+# ATCA schedule preparation library.
 ## Python library.
 
-Author: Jamie Stevens, ATCA Senior Systems Scientist and Lead Scientist
+Author: Jamie Stevens, ATCA Senior Systems Scientist
 
