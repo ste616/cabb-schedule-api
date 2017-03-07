@@ -3,6 +3,10 @@ from frequency_setup import frequency_setup
 import errors
 import re
 import calibrator_database
+from random import choice
+from string import ascii_uppercase
+
+idLength = 12
 
 class scan:
     def __init__(self):
@@ -32,9 +36,18 @@ class scan:
                                'freqConfig': "null",
                                'comment': "",
                                'wrap': "Closest",
+                               'id': ''.join(choice(ascii_uppercase) for i in range(idLength)),
                                'setupF1': frequency_setup(self),
                                'setupF2': frequency_setup(self) }
 
+    def getId(self):
+        return self.__scanDetails['id']
+
+    def setId(self, nId=None):
+        if nId is not None and len(nId) == idLength:
+            self.__scanDetails['id'] = nId
+        return self
+    
     def getSource(self):
         return self.__scanDetails['source']
 

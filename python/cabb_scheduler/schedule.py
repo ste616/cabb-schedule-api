@@ -75,12 +75,26 @@ class schedule:
     def __init__(self):
         # This is the list of scans, in order.
         self.scans = []
+        self.looping = True
+        self.calibratorAssociations = {}
         return None
 
     def clear(self):
         # Clear the schedule.
         self.scans = []
+        self.calibratorAssociations = {}
         return self
+
+    def setLooping(self, looping=None):
+        # This flag lets the library know whether the schedule will be looping in caobs.
+        # This will change the way the library writes out the schedule, to make sure a
+        # calibrator is observed at the end.
+        if looping is not None and (looping == True or looping == False):
+            self.looping = looping
+        return self
+
+    def getLooping(self):
+        return self.looping
 
     def __prepareValue(self, value, vtype):
         if vtype == "integer":
@@ -92,7 +106,7 @@ class schedule:
     def addScan(self, options={}):
         # Add a scan to the schedule.
         scan_new = scan()
-
+        
         # By default, we copy the details from the previous scan.
         if (not ('nocopy' in options and options['nocopy'] == True)) and (len(self.scans) > 0):
             scan_old = self.scans[-1]
@@ -144,20 +158,31 @@ class schedule:
                 self.scans[i].IF1().getFreq() == refScan.IF1().getFreq() and
                 self.scans[i].IF2().getFreq() == refScan.IF2().getFreq()):
                 matchedScans.append(i)
+                # Ensure the ID of each of the matched scans is the same.
+                self.scans[i].setId(refScan.getId())
+
+        # Craft the calibrator scan.
+        noptions = options
+        noptions['source'] = calibrator.getName()
+        noptions['rightAscension'] = calibrator.getRightAscension()
+        noptions['declination'] = calibrator.getDeclination()
+        noptions['freq1'] = refScan.IF1().getFreq()
+        noptions['freq2'] = refScan.IF2().getFreq()
+        noptions['calCode'] = "C"
+
         # We place the calibrator scan before each of the matched scans.
         for i in xrange(0, len(matchedScans)):
             # Remember, the index of the matched scan will go up by one every time
             # we put a new scan in before it.
             ni = i + matchedScans[i]
-            noptions = options
-            noptions['source'] = calibrator.getName()
-            noptions['rightAscension'] = calibrator.getRightAscension()
-            noptions['declination'] = calibrator.getDeclination()
-            noptions['freq1'] = self.scans[ni].IF1().getFreq()
-            noptions['freq2'] = self.scans[ni].IF2().getFreq()
-            noptions['calCode'] = "C"
             noptions['insertIndex'] = ni
-            self.addScan(noptions)
+            nscan = self.addScan(noptions)
+            if i == 0:
+                # Associate the calibrator to the scan.
+                self.calibratorAssociations[refScan.getId()] = nscan.getId()
+            else:
+                # Put the same ID on all the calibrators.
+                nscan.setId(self.calibratorAssociations[refScan.getId()])
         return None
     
     def deleteScan(self, idx=None):
