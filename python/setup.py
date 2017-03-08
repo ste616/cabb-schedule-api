@@ -13,4 +13,8 @@ setup(name='cabb_scheduler',
       author_email='Jamie.Stevens@csiro.au',
       license='MIT',
       packages=[ 'cabb_scheduler' ],
+      install_requires=[
+          'numpy',
+          'requests'
+      ],
       zip_safe=False)
