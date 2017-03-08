@@ -76,6 +76,7 @@ class schedule:
         # This is the list of scans, in order.
         self.scans = []
         self.looping = True
+        self.autoCals = True
         self.calibratorAssociations = {}
         return None
 
@@ -96,6 +97,20 @@ class schedule:
     def getLooping(self):
         return self.looping
 
+    def enableAutoCalibrators(self):
+        # Enable the calibrator scan checking function.
+        self.autoCals = True
+        return self
+
+    def disableAutoCalibrators(self):
+        # Disable the calibrator scan checking function.
+        self.autoCals = False
+        return self
+
+    def autoCalibrators(self):
+        # Return the state of the auto calibration mode.
+        return self.autoCals
+    
     def __prepareValue(self, value, vtype):
         if vtype == "integer":
             return int(value)
@@ -171,6 +186,7 @@ class schedule:
         noptions['calCode'] = "C"
 
         # We place the calibrator scan before each of the matched scans.
+        nscan = None
         for i in xrange(0, len(matchedScans)):
             # Remember, the index of the matched scan will go up by one every time
             # we put a new scan in before it.
@@ -183,7 +199,7 @@ class schedule:
             else:
                 # Put the same ID on all the calibrators.
                 nscan.setId(self.calibratorAssociations[refScan.getId()])
-        return None
+        return nscan
     
     def deleteScan(self, idx=None):
         # Delete a scan from the schedule, using the Python del indexing standard.
@@ -195,6 +211,93 @@ class schedule:
         if idx is not None:
             return self.scans[idx]
 
+    def getScanById(self, id=None):
+        # Return the scan specified.
+        if id is not None:
+            for i in xrange(0, len(self.scans)):
+                if self.scans[i].getId() == id:
+                    return self.scans[i]
+        return None
+
+    def scanToOptions(self, scan=None):
+        # Turn a scan into an options object.
+        oopts = {}
+        if scan is not None:
+            for f in self.__scanHandlers:
+                oopts[self.__scanHandlers[f]['option']] = getattr(scan, self.__scanHandlers[f]['get'])()
+            for f in self.__freqHandlers:
+                oopts[self.__freqHandlers[f]['option']] = getattr(getattr(scan, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['get'])()
+        return oopts
+    
+    def copyScans(self, ids=[], pos=None, calCheck=True):
+        # Copy the scans specified by their IDs and put the copies beginning at
+        # the nominated position (or at the end by default).
+        if len(ids) == 0:
+            return None
+        # Try to find the scans.
+        j = 0
+        for i in xrange(0, len(ids)):
+            cscan = self.getScanById(ids[i])
+            if cscan is not None:
+                copts = self.scanToOptions(cscan)
+                copts['nocopy'] = True
+                if pos is not None and pos >= 0 and pos < len(self.scans):
+                    copts['insertIndex'] = pos + j
+                nscan = self.addScan(copts)
+                # Set its ID.
+                nscan.setId(cscan.getId())
+                # We do this because j only increments when a scan is found.
+                j += 1
+        if calCheck == True:
+            # Now run the calibrator assignment checks.
+            self.checkCalibrators()
+
+    def checkCalibrators(self):
+        # Check that a calibrator scan is assigned to each of the associated
+        # sources, and add a scan if it isn't.
+        if self.autoCals == False:
+            # The user doesn't want us to do this.
+            return
+        i = 0
+        while (i < len(self.scans)):
+            # We loop like this because the length of the array may change as
+            # we go through.
+            tId = self.scans[i].getId()
+            # Check if this is a source with an associated calibrator.
+            if tId in self.calibratorAssociations:
+                # It is. Check if there is a calibrator scan before it.
+                if i == 0:
+                    # Nope, first scan, we add a calibrator scan.
+                    self.copyScans([ self.calibratorAssociations[tId] ], 0, False)
+                else:
+                    pId = self.scans[i - 1].getId()
+                    if pId != self.calibratorAssociations[tId]:
+                        # Nope, the scan before this one is not the calibrator.
+                        self.copyScans([ self.calibratorAssociations[tId] ], i, False)
+                    # Otherwise it is the calibrator scan.
+                # Check if there needs to be a calibrator scan after it.
+                if i == (len(self.scans) - 1):
+                    # We're at the end of the list.
+                    if self.looping == False:
+                        # We do need a cal scan at the end, because it won't go around.
+                        self.copyScans([ self.calibratorAssociations[tId] ], (i + 1), False)
+                    else:
+                        # Check that the first scan is a calibrator scan.
+                        pId = self.scans[0].getId()
+                        if pId != self.calibratorAssociations[tId]:
+                            # The first scan is not a calibrator scan, so we add one here.
+                            self.copyScans([ self.calibratorAssociations[tId] ], (i + 1), False)
+                        # Otherwise, it will loop back around to the calibrator.
+                else:
+                    # Check the ID of the next scan.
+                    nId = self.scans[i + 1].getId()
+                    if nId != self.calibratorAssociations[tId] and nId != tId:
+                        # There is another scan after us, but it isn't the same as us, and
+                        # it isn't our calibrator. We add a cal scan.
+                        self.copyScans([ self.calibratorAssociations[tId] ], (i + 1), False)
+            i += 1
+        return
+                
     def __outputScheduleLine(self, s, o, p, fn, fm):
         # Generic checker for line output to schedule.
         if (p is None) or (getattr(o, fn)() !=
@@ -214,6 +317,8 @@ class schedule:
     def write(self, name=None):
         # Write out the schedule to disk.
         if name is not None:
+            # Check we have all our calibrator scans.
+            self.checkCalibrators()
             with open(name, 'w') as schedFile:
                 for i in xrange(0, len(self.scans)):
                     schedFile.write("$SCAN*V5\n")

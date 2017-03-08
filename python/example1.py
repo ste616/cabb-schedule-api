@@ -39,7 +39,18 @@ print "Calibrator chosen: %s, %.1f degrees away" % (bestCal['calibrator'].getNam
 # We add this calibrator to the schedule, attaching it to the scan it
 # will be the calibrator for. We'll ask to observe the calibrator for 2
 # minutes.
-schedule.addCalibrator(bestCal['calibrator'], scan1, { 'scanLength': "00:02:00" })
+calScan = schedule.addCalibrator(bestCal['calibrator'], scan1, { 'scanLength': "00:02:00" })
 
+# We want the schedule to run for about an hour, so we want another two copies
+# of these two scans. Remembering that the library will take care of
+# associating a calibrator to each source, we only need to copy the source
+# scan.
+for i in xrange(0, 2):
+    schedule.copyScans([ scan1.getId() ])
+
+# Tell the library that we won't be looping, so there will be a calibrator scan at the
+# end of the schedule.
+schedule.setLooping(False)
+    
 # We can write out the schedule now, to the file "c001_magnetar.sch".
 schedule.write(name="c001_magnetar.sch")
