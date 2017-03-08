@@ -54,3 +54,5 @@ schedule.setLooping(False)
     
 # We can write out the schedule now, to the file "c001_magnetar.sch".
 schedule.write(name="c001_magnetar.sch")
+# This schedule should have 7 scans, with 2353-686 at scans 1, 3, 5 and 7, and the
+# magnetar at scan 2, 4 and 6.
