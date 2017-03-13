@@ -6,7 +6,7 @@ from setuptools import setup
 # Jamie.Stevens@csiro.au
 
 setup(name='cabb_scheduler',
-      version='1.0',
+      version='1.1',
       description='CABB Scheduling Python Library',
       url='https://github.com/ste616/cabb-schedule-api',
       author='Jamie Stevens',
@@ -18,3 +18,7 @@ setup(name='cabb_scheduler',
           'requests'
       ],
       zip_safe=False)
+
+# Changelog:
+# 2017-03-14, v1.1: Added the parse routine to the schedule library, to read in
+#    strings instead of just files.
