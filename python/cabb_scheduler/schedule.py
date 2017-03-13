@@ -340,6 +340,11 @@ class schedule:
                     schedFile.write("$SCANEND\n")
         return self
 
+    def parse(self, string=None):
+        # Take a schedule represented in string form (with \n as the line
+        # separator) and return the scans.
+        
+    
     def read(self, name=None):
         # Read in a schedule file.
         scanDetails = {}
