@@ -343,17 +343,14 @@ class schedule:
     def parse(self, string=None):
         # Take a schedule represented in string form (with \n as the line
         # separator) and return the scans.
-        
-    
-    def read(self, name=None):
-        # Read in a schedule file.
         scanDetails = {}
-        if name is not None:
-            with open(name, 'r') as schedFile:
-                # Reset our current scans.
-                self.clear()
-                for line in schedFile:
-                    line = line.strip()
+        if string is not None:
+            # Reset our current scans.
+            self.clear()
+            stringLines = [ s.strip() for s in string.splitlines() ]
+            if len(stringLines) > 0:
+                for i in xrange(0, len(stringLines)):
+                    line = stringLines[i]
                     if line == "$SCAN*V5":
                         # A new scan.
                         scanDetails = {}
@@ -367,3 +364,10 @@ class schedule:
                             scanDetails[self.__scanHandlers[els[0]]['option']] = els[1]
                         elif els[0] in self.__freqHandlers:
                             scanDetails[self.__freqHandlers[els[0]]['option']] = els[1]
+                    
+    
+    def read(self, name=None):
+        # Read in a schedule file.
+        if name is not None:
+            with open(name, 'r') as schedFile:
+                self.parse(schedFile.read())
