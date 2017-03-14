@@ -20,5 +20,5 @@ setup(name='cabb_scheduler',
       zip_safe=False)
 
 # Changelog:
-# 2017-03-14, v1.1: Added the parse routine to the schedule library, to read in
+# 2017-03-14, v1.1: Added the parse routine to the schedule library, to read/write in
 #    strings instead of just files, and return number of scans read in.
