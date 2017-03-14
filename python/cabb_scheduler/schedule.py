@@ -307,6 +307,16 @@ class schedule:
                            getattr(p, fn)()):
             s.write(fm % getattr(o, fn)())
 
+    def __prepareScheduleLine(self, thisScan, previousScan, scanHandler, outFormat):
+        # We decide whether we need to make a string for this.
+        if (previousScan is None) or (getattr(thisScan, scanHandler)() !=
+                                      getattr(previousScan, scanHandler)()):
+            # We do want to output this line.
+            outString = outFormat % getattr(thisScan, scanHandler)()
+            return outString
+        # Otherwise we don't need this line.
+        return None
+            
     def __formatSpecifier(self, fmt):
         if fmt == "string":
             return "%s"
@@ -316,31 +326,43 @@ class schedule:
             return "%d"
         else:
             return "%s"
-            
+
+    def toString(self):
+        # Make the schedule into a string.
+        outputStrings = []
+        for i in xrange(0, len(self.scans)):
+            # Every scan starts the same way.
+            outputStrings.append("$SCAN*V5")
+            for h in self.__scanHandlers:
+                outf = h + "=" + self.__formatSpecifier(self.__scanHandlers[h]['format'])
+                prevScan = None
+                if i > 0:
+                    prevScan = self.scans[i - 1]
+                nString = self.__prepareScheduleLine(self.scans[i], prevScan,
+                                                    self.__scanHandlers[h]['get'], outf)
+                if nString is not None:
+                    outputStrings.append(nString)
+            for h in self.__freqHandlers:
+                outf = h + "=" + self.__formatSpecifier(self.__freqHandlers[h]['format'])
+                prevScan = None
+                if i > 0:
+                    prevScan = getattr(self.scans[i - 1], self.__freqHandlers[h]['object'])()
+                nString = self.__prepareScheduleLine(getattr(self.scans[i], self.__freqHandlers[h]['object'])(),
+                                                     prevScan, self.__freqHandlers[h]['get'], outf)
+                if nString is not None:
+                    outputStrings.append(nString)
+            # And every scan ends the same way.
+            outputStrings.append("$SCANEND")
+        # Make the output string by joining the elements with the newline character.
+        return "\n".join(outputStrings) + "\n"
+        
     def write(self, name=None):
         # Write out the schedule to disk.
         if name is not None:
             # Check we have all our calibrator scans.
             self.checkCalibrators()
             with open(name, 'w') as schedFile:
-                for i in xrange(0, len(self.scans)):
-                    schedFile.write("$SCAN*V5\n")
-                    for h in self.__scanHandlers:
-                        outf = h + "=" + self.__formatSpecifier(self.__scanHandlers[h]['format']) + "\n"
-                        prevScan = None
-                        if i > 0:
-                            prevScan = self.scans[i - 1]
-                        self.__outputScheduleLine(schedFile, self.scans[i], prevScan,
-                                                  self.__scanHandlers[h]['get'], outf)
-                    for h in self.__freqHandlers:
-                        outf = h + "=" + self.__formatSpecifier(self.__freqHandlers[h]['format']) + "\n"
-                        prevScan = None
-                        if i > 0:
-                            prevScan = getattr(self.scans[i - 1], self.__freqHandlers[h]['object'])()
-                        self.__outputScheduleLine(schedFile,
-                                                  getattr(self.scans[i], self.__freqHandlers[h]['object'])(),
-                                                  prevScan, self.__freqHandlers[h]['get'], outf)
-                    schedFile.write("$SCANEND\n")
+                schedFile.write(self.toString())
         return self
 
     def parse(self, string=None):
