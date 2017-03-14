@@ -97,6 +97,9 @@ class schedule:
     def getLooping(self):
         return self.looping
 
+    def getNumberOfScans(self):
+        return len(self.scans)
+    
     def enableAutoCalibrators(self):
         # Enable the calibrator scan checking function.
         self.autoCals = True
@@ -364,6 +367,7 @@ class schedule:
                             scanDetails[self.__scanHandlers[els[0]]['option']] = els[1]
                         elif els[0] in self.__freqHandlers:
                             scanDetails[self.__freqHandlers[els[0]]['option']] = els[1]
+        return self.getNumberOfScans()
                     
     
     def read(self, name=None):
@@ -371,3 +375,4 @@ class schedule:
         if name is not None:
             with open(name, 'r') as schedFile:
                 self.parse(schedFile.read())
+        return self.getNumberOfScans()

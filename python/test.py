@@ -28,7 +28,8 @@ if bestCal is not None:
 testSchedule.write(name="test.sch")
 
 # Read an existing schedule.
-testSchedule.read("c2914_follow_cal.sch")
+nscans = testSchedule.read("c2914_follow_cal.sch")
+print "Read in %d scans" % nscans
 # Output some things.
 a = testSchedule.getScan(18)
 print a.getSource()
