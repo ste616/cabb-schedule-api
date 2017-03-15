@@ -97,9 +97,7 @@ class monicaServer:
 
         session = Session()
         url = self.protocol + "://" + self.webserverName + "/" + self.webserverPath
-        print data
         postResponse = session.post( url=url, data=data )
-        print postResponse.text
         return json.loads(postResponse.text)
 
     def updatePoints(self):

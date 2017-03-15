@@ -35,8 +35,11 @@ scan1 = schedule.addScan(
 # Request a list of nearby calibrators from the ATCA calibrator database.
 calList = scan1.findCalibrator()
 
-# Ask for the library to choose the best one.
-bestCal = calList.getBestCalibrator()
+# Ask for the library to choose the best one for the current array. We first need to
+# get the current array from MoniCA.
+currentArray = cabb.monica_information.getArray()
+# And pass this as the arggument to the calibrator selector.
+bestCal = calList.getBestCalibrator(currentArray)
 # This should choose 2353-686.
 print "Calibrator chosen: %s, %.1f degrees away" % (bestCal['calibrator'].getName(),
                                                     bestCal['distance'])

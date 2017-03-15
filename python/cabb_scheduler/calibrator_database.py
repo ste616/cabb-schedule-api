@@ -8,8 +8,8 @@ import errors
 arrayNames = { '6A': "6km", '6B': "6km", '6C': "6km", '6D': "6km",
                '1.5A': "1.5km", '1.5B': "1.5km", '1.5C': "1.5km", '1.5D': "1.5km",
                '750A': "750m", '750B': "750m", '750C': "750m", '750D': "750m",
-               'EW367': "small", 'EW352': "small",
-               'H214': "small", 'H168': "small", 'H75': "small" }
+               'EW367': "375m", 'EW352': "375m",
+               'H214': "375m", 'H168': "375m", 'H75': "375m" }
 
 class calibrator:
     def __init__(self, details=None):
@@ -217,6 +217,11 @@ class calibratorSearchResponse:
             array = "6km"
         elif array in arrayNames:
             array = arrayNames[array]
+        else:
+            # The array name might have a version letter at the end.
+            tarray = array[:-1]
+            if tarray in arrayNames:
+                array = arrayNames[tarray]
         
         # Work out the band first.
         firstFrequency = self.__calibrators['list'][0]['calibrator'].getFluxDensities()[0]['frequency']
