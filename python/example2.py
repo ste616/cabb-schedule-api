@@ -1,4 +1,4 @@
-# example1.py
+# example2.py
 # Jamie Stevens
 # Part of the ATCA scheduler Python library.
 
