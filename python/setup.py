@@ -6,7 +6,7 @@ from setuptools import setup
 # Jamie.Stevens@csiro.au
 
 setup(name='cabb_scheduler',
-      version='1.1',
+      version='1.2',
       description='CABB Scheduling Python Library',
       url='https://github.com/ste616/cabb-schedule-api',
       author='Jamie Stevens',
@@ -22,3 +22,5 @@ setup(name='cabb_scheduler',
 # Changelog:
 # 2017-03-14, v1.1: Added the parse routine to the schedule library, to read/write in
 #    strings instead of just files, and return number of scans read in.
+# 2017-03-15, v1.2: Add the ability to query MoniCA for the array name and the
+#    frequencies currently in use.
