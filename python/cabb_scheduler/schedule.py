@@ -43,7 +43,7 @@ class schedule:
         'Averaging': { 'format': "string", 'get': "getAveraging", 'set': "setAveraging",
                        'option': "averaging" },
 
-        'Environment': { 'format': "string", 'get': "getEnvironment", 'set': "setEnvironment",
+        'Environment': { 'format': "integer", 'get': "getEnvironment", 'set': "setEnvironment",
                          'option': "environment" },
 
         'PointingOffset1': { 'format': "float", 'get': "getPointingOffset1", 'set': "setPointingOffset1",

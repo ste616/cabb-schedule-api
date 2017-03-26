@@ -6,7 +6,7 @@ from setuptools import setup
 # Jamie.Stevens@csiro.au
 
 setup(name='cabb_scheduler',
-      version='1.2',
+      version='1.3',
       description='CABB Scheduling Python Library',
       url='https://github.com/ste616/cabb-schedule-api',
       author='Jamie Stevens',
@@ -24,3 +24,5 @@ setup(name='cabb_scheduler',
 #    strings instead of just files, and return number of scans read in.
 # 2017-03-15, v1.2: Add the ability to query MoniCA for the array name and the
 #    frequencies currently in use.
+# 2017-03-26, v1.3: Fix a bug in interpreting the Environment code, reading as an
+#    integer.
