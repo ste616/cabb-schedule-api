@@ -329,6 +329,8 @@ class schedule:
 
     def toString(self):
         # Make the schedule into a string.
+        # Check we have all our calibrator scans.
+        self.checkCalibrators()
         outputStrings = []
         for i in xrange(0, len(self.scans)):
             # Every scan starts the same way.
@@ -359,8 +361,6 @@ class schedule:
     def write(self, name=None):
         # Write out the schedule to disk.
         if name is not None:
-            # Check we have all our calibrator scans.
-            self.checkCalibrators()
             with open(name, 'w') as schedFile:
                 schedFile.write(self.toString())
         return self

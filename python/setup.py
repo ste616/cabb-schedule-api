@@ -25,4 +25,5 @@ setup(name='cabb_scheduler',
 # 2017-03-15, v1.2: Add the ability to query MoniCA for the array name and the
 #    frequencies currently in use.
 # 2017-03-26, v1.3: Fix a bug in interpreting the Environment code, reading as an
-#    integer.
+#    integer. Also move the calibrator check into the toString routine.
+
