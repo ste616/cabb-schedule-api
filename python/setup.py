@@ -6,7 +6,7 @@ from setuptools import setup
 # Jamie.Stevens@csiro.au
 
 setup(name='cabb_scheduler',
-      version='1.3',
+      version='1.4',
       description='CABB Scheduling Python Library',
       url='https://github.com/ste616/cabb-schedule-api',
       author='Jamie Stevens',
@@ -26,4 +26,5 @@ setup(name='cabb_scheduler',
 #    frequencies currently in use.
 # 2017-03-26, v1.3: Fix a bug in interpreting the Environment code, reading as an
 #    integer. Also move the calibrator check into the toString routine.
-
+# 2017-03-28, v1.4: Add a check for non-valid MoniCA point names so it doesn't die
+#    when they are encountered.

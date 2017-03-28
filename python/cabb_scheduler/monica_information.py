@@ -107,10 +107,11 @@ class monicaServer:
         response = self.__comms(data)
         if response is not None and "pointData" in response:
             for i in xrange(0, len(response['pointData'])):
-                point = self.getPointByName(response['pointData'][i]['pointName'])
-                point.setValue(response['pointData'][i]['value'])
-                point.setUpdateTime(response['pointData'][i]['time'])
-                point.setErrorState(not bool(response['pointData'][i]['errorState']))
+                if response['pointData'][i]['pointName'] is not None:
+                    point = self.getPointByName(response['pointData'][i]['pointName'])
+                    point.setValue(response['pointData'][i]['value'])
+                    point.setUpdateTime(response['pointData'][i]['time'])
+                    point.setErrorState(not bool(response['pointData'][i]['errorState']))
             return True
         return False
 
