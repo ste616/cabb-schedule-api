@@ -27,4 +27,5 @@ setup(name='cabb_scheduler',
 # 2017-03-26, v1.3: Fix a bug in interpreting the Environment code, reading as an
 #    integer. Also move the calibrator check into the toString routine.
 # 2017-03-28, v1.4: Add a check for non-valid MoniCA point names so it doesn't die
-#    when they are encountered.
+#    when they are encountered. Add a switch to prevent a calibrator being put
+#    before the source, so the user can elect to get on source as soon as possible.

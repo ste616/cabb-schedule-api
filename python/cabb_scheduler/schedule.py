@@ -77,6 +77,7 @@ class schedule:
         self.scans = []
         self.looping = True
         self.autoCals = True
+        self.calFirst = True
         self.calibratorAssociations = {}
         return None
 
@@ -110,6 +111,18 @@ class schedule:
         self.autoCals = False
         return self
 
+    def enablePriorCalibration(self):
+        # Ensure a calibrator is placed before the first source instance
+        # in the schedule.
+        self.calFirst = True
+        return self
+
+    def disablePriorCalibration(self):
+        # Don't automatically put a calibrator before the first source
+        # instance in the schedule.
+        self.calFirst = False
+        return self
+    
     def autoCalibrators(self):
         # Return the state of the auto calibration mode.
         return self.autoCals
@@ -189,12 +202,15 @@ class schedule:
         noptions['calCode'] = "C"
 
         # We place the calibrator scan before each of the matched scans.
+        # Or afterwards if we don't want to get to the calibrator first.
         nscan = None
         for i in xrange(0, len(matchedScans)):
             # Remember, the index of the matched scan will go up by one every time
             # we put a new scan in before it.
             ni = i + matchedScans[i]
             noptions['insertIndex'] = ni
+            if self.calFirst == False:
+                noptions['insertIndex'] = ni + 1
             nscan = self.addScan(noptions)
             if i == 0:
                 # Associate the calibrator to the scan.
@@ -269,20 +285,22 @@ class schedule:
             # Check if this is a source with an associated calibrator.
             if tId in self.calibratorAssociations:
                 # It is. Check if there is a calibrator scan before it.
-                if i == 0:
-                    # Nope, first scan, we add a calibrator scan.
-                    self.copyScans([ self.calibratorAssociations[tId] ], 0, False)
-                else:
-                    pId = self.scans[i - 1].getId()
-                    if pId != self.calibratorAssociations[tId]:
-                        # Nope, the scan before this one is not the calibrator.
-                        self.copyScans([ self.calibratorAssociations[tId] ], i, False)
+                if self.calFirst == True:
+                    if i == 0:
+                        # Nope, first scan, we add a calibrator scan.
+                        self.copyScans([ self.calibratorAssociations[tId] ], 0, False)
+                    else:
+                        pId = self.scans[i - 1].getId()
+                        if pId != self.calibratorAssociations[tId]:
+                            # Nope, the scan before this one is not the calibrator.
+                            self.copyScans([ self.calibratorAssociations[tId] ], i, False)
                     # Otherwise it is the calibrator scan.
                 # Check if there needs to be a calibrator scan after it.
                 if i == (len(self.scans) - 1):
                     # We're at the end of the list.
-                    if self.looping == False:
-                        # We do need a cal scan at the end, because it won't go around.
+                    if self.looping == False or self.calFirst == False:
+                        # We do need a cal scan at the end, because it won't go around, or when
+                        # it does there won't be a calibrator there.
                         self.copyScans([ self.calibratorAssociations[tId] ], (i + 1), False)
                     else:
                         # Check that the first scan is a calibrator scan.

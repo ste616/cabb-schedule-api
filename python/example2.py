@@ -31,6 +31,9 @@ scan1 = schedule.addScan(
       'freq1': currentFreqs[0], 'freq2': currentFreqs[1], 'project': "C001",
       'scanLength': "00:20:00", 'scanType': "Dwell" }
 )
+# Since we definitely want to get onto source as quickly as possible, we tell the
+# library not to go to the calibrator first.
+schedule.disablePriorCalibration()
 
 # Request a list of nearby calibrators from the ATCA calibrator database.
 calList = scan1.findCalibrator()
@@ -62,5 +65,5 @@ schedule.setLooping(False)
     
 # We can write out the schedule now, to the file "c001_magnetar.sch".
 schedule.write(name="c001_magnetar.sch")
-# This schedule should have 7 scans, with 2353-686 at scans 1, 3, 5 and 7, and the
-# magnetar at scan 2, 4 and 6.
+# This schedule should have 7 scans, with 2353-686 at scans 2, 4 and 6, and the
+# magnetar at scan 1, 3 and 5.
