@@ -29,7 +29,7 @@ class zoom:
         return self.__details['channel']
 
     def setChannel(self, chan=None):
-        channelWidth = parent.getChannelWidth()
+        channelWidth = self.__parent.getChannelWidth()
         nChannels = 2048 / channelWidth
         if chan is not None:
             if (chan < 1) or (chan > (nChannels * 2) + 1):
