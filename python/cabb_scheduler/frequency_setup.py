@@ -52,6 +52,16 @@ class frequency_setup:
             if (self.__setupDetails['zooms'][i].isEnabled):
                 tw += 1
         return tw
+
+    def getZoomGroups(self):
+        # Return a list of all the zoom groups we have.
+        groups = []
+        for i in xrange(0, len(self.__setupDetails['zooms'])):
+            if (self.__setupDetails['zooms'][i].isEnabled):
+                g = self.__setupDetails['zooms'][i].getGroup()
+                if g not in groups:
+                    groups.append(g)
+        return g
     
     def addZoom(self, options=None):
         # Check we don't already have all the zooms.
@@ -61,13 +71,40 @@ class frequency_setup:
         if (options is not None) and ('width' in options):
             if (options['width'] + nZooms) > 16:
                 raise ZoomError("Cannot allocate more than 16 zooms.")
-        self.__setupDetails['zooms'].append(zoom(self))
+        # Work out which group we will be.
+        cgroups = self.getZoomGroups()
+        ngroup = max(cgroups)
+        # Work out which channel will be the "centre" channel.
+        cchan = 1
+        sb = self.getSideband()
+        w = 1
         if (options is not None) and ('width' in options):
-            self.__setupDetails['zooms'][-1].setWidth(options['width'])
+            w = options['width']
+            if ((w % 2) == 0):
+                # Even width.
+                cchan = w / 2
+                if (sb > 0):
+                    # USB
+                    cchan += 1
+            else:
+                # Odd width.
+                cchan = (w + 1) / 2
+        # We need to work out which zoom channel corresponds to the first zoom.
+        zchan = -1
+        # Are we setting the frequency?
         if (options is not None) and ('freq' in options):
-            self.__setupDetails['zooms'][-1].setFreq(options['freq'])
-        if (options is not None) and ('chan' in options):
-            self.__setupDetails['zooms'][-1].setChannel(options['chan'])
+            achan = nZooms + (cchan - 1)
+            self.__setupDetails['zooms'][achan].setFreq(options['freq'])
+            # Now get the zoom channel number for this, and from this work out the
+            # first zoom channel.
+            zchan = self.__setupDetails['zooms'][achan].getChannel() - (cchan - 1)
+        elif (options is not None) and ('chan' in options):
+            zchan = options['chan'] - (cchan - 1)
+        # Now go through all the zooms and set their channel number and group.
+        for i in xrange(0, w):
+            achan = nZooms + i
+            self.__setupDetails['zooms'][achan].setChannel(zchan + i)
+            self.__setupDetails['zooms'][achan].setGroup(ngroup)
         return self
     
     def setFreq(self, cfreq=None):
@@ -97,14 +134,15 @@ class frequency_setup:
         c = { 'band': "", 'corrConfigs': [] }
         c['band'] = self.__frequencyToBand(self.__setupDetails['continuumCentre'])
         # Add all the compatible CABB configurations.
+        n = self.getNZooms()
         if (self.__setupDetails['channelBandwidth'] == 1 and
-            len(self.__setupDetails['zooms']) == 0):
+            n == 0):
             # 1 MHz continuum, no zooms necessary.
             c['corrConfigs'].append("1M")
             c['corrConfigs'].append("1MZ")
             c['corrConfigs'].append("1M64MZ")
         elif (self.__setupDetails['channelBandwidth'] == 1 and
-              len(self.__setupDetails['zooms']) > 0):
+              n > 0):
             # 1 MHz continuum, zooms required.
             c['corrConfigs'].append("1MZ")
         elif (self.__setupDetails['channelBandwidth'] == 64):

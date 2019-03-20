@@ -71,7 +71,7 @@ class schedule:
         'Freq-1': { 'format': "integer", 'get': "getFreq", 'set': "setFreq", 'object': "IF1", 'option': "freq1" },
         'Freq-2': { 'format': "integer", 'get': "getFreq", 'set': "setFreq", 'object': "IF2", 'option': "freq2" }
     }
-    
+
     def __init__(self):
         # This is the list of scans, in order.
         self.scans = []
