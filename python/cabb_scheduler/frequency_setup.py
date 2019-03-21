@@ -49,7 +49,7 @@ class frequency_setup:
         # Return the number of zoom channels currently in use.
         tw = 0
         for i in xrange(0, len(self.__setupDetails['zooms'])):
-            if (self.__setupDetails['zooms'][i].isEnabled):
+            if (self.__setupDetails['zooms'][i].isEnabled()):
                 tw += 1
         return tw
 
@@ -61,7 +61,7 @@ class frequency_setup:
                 g = self.__setupDetails['zooms'][i].getGroup()
                 if g not in groups:
                     groups.append(g)
-        return g
+        return groups
 
     def setZoomChannel(self, zoomnum=None, chan=None):
         # We set a particular zoom to a particular channel.
@@ -91,7 +91,7 @@ class frequency_setup:
     def addZoom(self, options=None):
         # Check we don't already have all the zooms.
         nZooms = self.getNZooms()
-        if nZooms >= 16:
+        if nZooms > 16:
             raise ZoomError("All zooms have already been allocated.")
         if (options is not None) and ('width' in options):
             if (options['width'] + nZooms) > 16:
