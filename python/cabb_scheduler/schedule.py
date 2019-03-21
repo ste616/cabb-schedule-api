@@ -159,6 +159,15 @@ class schedule:
             if self.__freqHandlers[f]['option'] in options:
                 val = self.__prepareValue(options[self.__freqHandlers[f]['option']], self.__freqHandlers[f]['format'])
                 getattr(getattr(scan_new, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['set'])(val)
+
+        # We do zooms differently.
+        for f in xrange(1, 3):
+            freqObject = "freq%d" % f
+            for z in xrange(1, 17):
+                option = "zoom%d-%d" % (z, f)
+                if (option in options):
+                    val = self.__prepareValue(options[option], "integer")
+                    getattr(getattr(scan_new, freqObject)(), "setZoomChannel")(z, val)
                 
         # Add the scan to the list.
         if ('insertIndex' in options and options['insertIndex'] >= 0):
@@ -246,6 +255,11 @@ class schedule:
                 oopts[self.__scanHandlers[f]['option']] = getattr(scan, self.__scanHandlers[f]['get'])()
             for f in self.__freqHandlers:
                 oopts[self.__freqHandlers[f]['option']] = getattr(getattr(scan, self.__freqHandlers[f]['object'])(), self.__freqHandlers[f]['get'])()
+            for f in xrange(1, 3):
+                freqObject = "freq%d" % f
+                for z in xrange(1, 17):
+                    option = "zoom%d-%d" % (z, f)
+                    oopts[option] = getattr(getattr(scan, freqObject)(), "getZoomChannel")(z)
         return oopts
     
     def copyScans(self, ids=[], pos=None, calCheck=True):
@@ -325,12 +339,17 @@ class schedule:
                            getattr(p, fn)()):
             s.write(fm % getattr(o, fn)())
 
-    def __prepareScheduleLine(self, thisScan, previousScan, scanHandler, outFormat):
+    def __prepareScheduleLine(self, thisScan, previousScan, scanHandler, outFormat, garg=None):
         # We decide whether we need to make a string for this.
-        if (previousScan is None) or (getattr(thisScan, scanHandler)() !=
-                                      getattr(previousScan, scanHandler)()):
+        if (((garg is not None) and ((previousScan is None) or (getattr(thisScan, scanHandler)(garg) !=
+                                                               getattr(previousScan, scanHandler)(garg)))) or
+            ((previousScan is None) or (getattr(thisScan, scanHandler)() !=
+                                        getattr(previousScan, scanHandler)()))):
             # We do want to output this line.
-            outString = outFormat % getattr(thisScan, scanHandler)()
+            if (garg is not None):
+                outString = outFormat % getattr(thisScan, scanHandler)(garg)
+            else:
+                outString = outFormat % getattr(thisScan, scanHandler)()
             return outString
         # Otherwise we don't need this line.
         return None
@@ -371,6 +390,16 @@ class schedule:
                                                      prevScan, self.__freqHandlers[h]['get'], outf)
                 if nString is not None:
                     outputStrings.append(nString)
+            for f in xrange(1, 3):
+                freqObject = "freq%d" % f
+                for z in xrange(1, 17):
+                    outf = "Zoom%d-%d=" % (z, f)
+                    outf += self.__formatSpecifier("integer")
+                    prevScan = None
+                    if i > 0:
+                        prevScan = self.scans[i - 1]
+                    nstring = self.__prepareScheduleLine(getattr(self.scans[i], freqObject)(),
+                                                         prevScan, "getZoomChannel", outf, z)
             # And every scan ends the same way.
             outputStrings.append("$SCANEND")
         # Make the output string by joining the elements with the newline character.

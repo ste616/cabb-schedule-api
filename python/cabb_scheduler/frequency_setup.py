@@ -62,7 +62,32 @@ class frequency_setup:
                 if g not in groups:
                     groups.append(g)
         return g
-    
+
+    def setZoomChannel(self, zoomnum=None, chan=None):
+        # We set a particular zoom to a particular channel.
+        # This gets used a lot during load.
+        if (zoomnum is None or zoomnum < 1 or zoomnum > 16):
+            raise ZoomError("Unable to set zoom information.")
+        if (chan is None):
+            raise ZoomError("Channel number not supplied while setting zoom info.")
+        z = self.__setupDetails['zooms'][zoomnum - 1]
+        if (chan == 0):
+            # This means disable this zoom.
+            z.disable()
+        else:
+            z.setChannel(chan)
+            z.enable()
+
+    def getZoomChannel(self, zoomnum):
+        if ((zoomnum is not None) and (zoomnum >= 1) and (zoomnum <= 16)):
+            z = self.__setupDetails['zooms'][zoomnum - 1]
+            if (z.isEnabled()):
+                return self.__setupDetails['zooms'][zoomnum - 1].getChannel()
+            else:
+                return 0
+        else:
+            raise ZoomError("Valid zoom number not supplied.")
+            
     def addZoom(self, options=None):
         # Check we don't already have all the zooms.
         nZooms = self.getNZooms()
@@ -105,6 +130,7 @@ class frequency_setup:
             achan = nZooms + i
             self.__setupDetails['zooms'][achan].setChannel(zchan + i)
             self.__setupDetails['zooms'][achan].setGroup(ngroup)
+            self.__setupDetails['zooms'][achan].enable()
         return self
     
     def setFreq(self, cfreq=None):
