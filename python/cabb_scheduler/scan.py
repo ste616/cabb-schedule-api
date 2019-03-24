@@ -126,7 +126,7 @@ class scan:
         return self.__scanDetails['setupF2']
 
     def getSideband(self):
-        fband = self.__scanDetails['setupF1'].__frequencyToBand()
+        fband = self.__scanDetails['setupF1'].getFrequencyBand()
         if fband == "16cm":
             return -1
         elif fband == "4cm":
@@ -139,8 +139,8 @@ class scan:
             else:
                 return 1
         elif fband == "3mm":
-            f1 = self.scanDetails['setupF1'].getFreq()
-            f2 = self.scanDetails['setupF2'].getFreq()
+            f1 = self.__scanDetails['setupF1'].getFreq()
+            f2 = self.__scanDetails['setupF2'].getFreq()
             hif = f2
             lof = f1
             if (f2 < f1):

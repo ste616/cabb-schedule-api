@@ -29,6 +29,9 @@ class frequency_setup:
             elif (cfreq >= 82501 and cfreq <= 117699):
                 return "3mm"
         return None
+
+    def getFrequencyBand(self):
+        return self.__frequencyToBand()
     
     def getFreq(self):
         return self.__setupDetails['continuumCentre']
@@ -88,6 +91,14 @@ class frequency_setup:
         else:
             raise ZoomError("Valid zoom number not supplied.")
             
+    def getAllZooms(self):
+        zobj = {}
+        for i in xrange(1, len(self.__setupDetails['zooms']) + 1):
+            pz = self.getZoomChannel(i)
+            if pz != 0:
+                zobj['zoom%d' % i] = pz
+        return zobj
+    
     def addZoom(self, options=None):
         # Check we don't already have all the zooms.
         nZooms = self.getNZooms()
