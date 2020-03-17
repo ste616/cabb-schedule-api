@@ -3,7 +3,7 @@ from requests import Session
 from xml.dom import minidom
 import json
 import numpy as np
-import errors
+import cabb_scheduler.errors
 
 arrayNames = { '6A': "6km", '6B': "6km", '6C': "6km", '6D': "6km",
                '1.5A': "1.5km", '1.5B': "1.5km", '1.5C': "1.5km", '1.5D': "1.5km",
@@ -30,7 +30,7 @@ class calibrator:
             if 'declination' in details:
                 self.setDeclination(details['declination'])
             if 'fluxDensities' in details:
-                for i in xrange(0, len(details['fluxDensities'])):
+                for i in range(0, len(details['fluxDensities'])):
                     self.addFluxDensity(details['fluxDensities'][i]['frequency'],
                                         details['fluxDensities'][i]['fluxDensity'])
 
@@ -62,7 +62,7 @@ class calibrator:
         if frequency is not None and fluxDensity is not None:
             # Check we don't already have an element with this frequency.
             foundFrequency = False
-            for i in xrange(0, len(self.__calibratorDetails['fluxDensities'])):
+            for i in range(0, len(self.__calibratorDetails['fluxDensities'])):
                 if (self.__calibratorDetails['fluxDensities'][i]['frequency'] == int(frequency)):
                     self.__calibratorDetails['fluxDensities'][i]['fluxDensity'] = float(fluxDensity)
                     foundFrequency = True
@@ -73,7 +73,7 @@ class calibrator:
 
     def getFluxDensities(self, frequency=None):
         if frequency is not None:
-            for i in xrange(0, len(self.__calibratorDetails['fluxDensities'])):
+            for i in range(0, len(self.__calibratorDetails['fluxDensities'])):
                 if (self.__calibratorDetails['fluxDensities'][i]['frequency'] == int(frequency)):
                     return [ self.__calibratorDetails['fluxDensities'][i] ]
             return None
@@ -133,7 +133,7 @@ class calibrator:
         for a in arrayNames:
             if arrayNames[a] not in arraySpecs:
                 arraySpecs[arrayNames[a]] = {}
-                for i in xrange(0, len(bandNames)):
+                for i in range(0, len(bandNames)):
                     arraySpecs[arrayNames[a]][bandNames[i]] = {
                         'closurePhases': [], 'defects': [],
                         'fluxDensities': [],
@@ -141,19 +141,19 @@ class calibrator:
                         'fluxDensityMedian': None, 'fluxDensityStdDev': None,
                         'qualityFlag': None
                     }
-        for i in xrange(0, len(self.__calibratorDetails['measurements'])):
+        for i in range(0, len(self.__calibratorDetails['measurements'])):
             # Work out closure phase and defect as a function of band and array.
             r = self.__calibratorDetails['measurements'][i]
             a = r['array'].split()[0]
             b = r['frequency_band']
             if a in arrayNames:
                 arr = arrayNames[a]
-                for j in xrange(0, len(r['frequencies'])):
+                for j in range(0, len(r['frequencies'])):
                     r2 = r['frequencies'][j]
-                    for k in xrange(0, len(r2['closure_phases'])):
+                    for k in range(0, len(r2['closure_phases'])):
                         r3 = r2['closure_phases'][k]
                         arraySpecs[arr][b]['closurePhases'].append(float(r3['closure_phase_average']))
-                for j in xrange(0, len(r['fluxdensities'])):
+                for j in range(0, len(r['fluxdensities'])):
                     r2 = r['fluxdensities'][j]
                     arraySpecs[arr][b]['defects'].append((float(r2['fluxdensity_scalar_averaged']) /
                                                           float(r2['fluxdensity_vector_averaged'])) - 1)
@@ -230,7 +230,7 @@ class calibratorSearchResponse:
         calFound = False
         calFd = None
         while (calFound == False and desiredScore > 1):
-            for i in xrange(0, len(self.__calibrators['list'])):
+            for i in range(0, len(self.__calibrators['list'])):
                 tcal = self.__calibrators['list'][i]['calibrator']
                 tFd = tcal.getFluxDensities(firstFrequency)[0]['fluxDensity']
                 if tcal is not None and (calFound == False or
@@ -284,7 +284,7 @@ def __model2FluxDensity(model=None, frequency=None):
     if model is not None and frequency is not None:
         logS = float(model[0])
         logF = np.log10(float(frequency) / 1000)
-        for i in xrange(1, len(model) - 1):
+        for i in range(1, len(model) - 1):
             logS += float(model[i]) * logF**i
         return 10**logS
 
@@ -297,7 +297,7 @@ def __getValue(xmlNode=None, tagName=None):
 
 def __communications(data=None, parseType=None):
     serverName = "www.narrabri.atnf.csiro.au"
-    serverProtocol = "http://"
+    serverProtocol = "https://"
     serverScript = "/cgi-bin/Calibrators/new/caldb_v3.pl"
 
     if data is None:
@@ -326,7 +326,7 @@ def coneSearch(ra=None, dec=None, radius=None, fluxLimit=None, frequencies=None)
         fluxLimit = 0.2
     if frequencies is None:
         frequencies = [ 5500, 9000 ]
-    for i in xrange(0, len(frequencies)):
+    for i in range(0, len(frequencies)):
         frequencies[i] = str(frequencies[i])
         
     data = { 'mode': "cals" }
@@ -339,7 +339,7 @@ def coneSearch(ra=None, dec=None, radius=None, fluxLimit=None, frequencies=None)
     xmlresponse = __communications(data, "xml")
     sourceList = xmlresponse.getElementsByTagName('source')
     calList = calibratorSearchResponse()
-    for i in xrange(0, len(sourceList)):
+    for i in range(0, len(sourceList)):
         distance = __getValue(sourceList[i], 'distance')
         j = 1
         fluxDensities = []

@@ -6,7 +6,7 @@ from setuptools import setup
 # Jamie.Stevens@csiro.au
 
 setup(name='cabb_scheduler',
-      version='1.4',
+      version='1.5',
       description='CABB Scheduling Python Library',
       url='https://github.com/ste616/cabb-schedule-api',
       author='Jamie Stevens',

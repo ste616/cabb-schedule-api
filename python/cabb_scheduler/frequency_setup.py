@@ -1,6 +1,6 @@
 # A frequency setup.
-from zoom import zoom
-import errors
+from cabb_scheduler.zoom import zoom
+import cabb_scheduler.errors
 
 class frequency_setup:
     def __init__(self, parent):
@@ -9,7 +9,7 @@ class frequency_setup:
         self.__setupDetails = { 'continuumCentre': 2100, 'channelBandwidth': 1,
                                 'zooms': [] }
         # Assign all the zooms.
-        for i in xrange(0, 16):
+        for i in range(0, 16):
             self.__setupDetails['zooms'].append(zoom(self))
 
     def __frequencyToBand(self, cfreq=None):
@@ -51,7 +51,7 @@ class frequency_setup:
     def getNZooms(self):
         # Return the number of zoom channels currently in use.
         tw = 0
-        for i in xrange(0, len(self.__setupDetails['zooms'])):
+        for i in range(0, len(self.__setupDetails['zooms'])):
             if (self.__setupDetails['zooms'][i].isEnabled()):
                 tw += 1
         return tw
@@ -59,7 +59,7 @@ class frequency_setup:
     def getZoomGroups(self):
         # Return a list of all the zoom groups we have.
         groups = []
-        for i in xrange(0, len(self.__setupDetails['zooms'])):
+        for i in range(0, len(self.__setupDetails['zooms'])):
             if (self.__setupDetails['zooms'][i].isEnabled):
                 g = self.__setupDetails['zooms'][i].getGroup()
                 if g not in groups:
@@ -93,7 +93,7 @@ class frequency_setup:
             
     def getAllZooms(self):
         zobj = {}
-        for i in xrange(1, len(self.__setupDetails['zooms']) + 1):
+        for i in range(1, len(self.__setupDetails['zooms']) + 1):
             pz = self.getZoomChannel(i)
             if pz != 0:
                 zobj['zoom%d' % i] = pz
@@ -137,7 +137,7 @@ class frequency_setup:
         elif (options is not None) and ('chan' in options):
             zchan = options['chan'] - (cchan - 1)
         # Now go through all the zooms and set their channel number and group.
-        for i in xrange(0, w):
+        for i in range(0, w):
             achan = nZooms + i
             self.__setupDetails['zooms'][achan].setChannel(zchan + i)
             self.__setupDetails['zooms'][achan].setGroup(ngroup)

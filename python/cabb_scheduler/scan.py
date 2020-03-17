@@ -1,8 +1,8 @@
 # A scan has several required fields.
-from frequency_setup import frequency_setup
-import errors
+from cabb_scheduler.frequency_setup import frequency_setup
+import cabb_scheduler.errors
 import re
-import calibrator_database
+import cabb_scheduler.calibrator_database as calibrator_database
 from random import choice
 from string import ascii_uppercase
 

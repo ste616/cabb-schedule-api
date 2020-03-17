@@ -1,5 +1,5 @@
 # A zoom band.
-import errors
+import cabb_scheduler.errors
 
 class zoom:
     def __init__(self, parent):

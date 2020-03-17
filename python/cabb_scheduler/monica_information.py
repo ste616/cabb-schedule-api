@@ -1,7 +1,7 @@
 # A library to handle dealing with ATCA MoniCA points.
 from requests import Session
 import json
-import errors
+import cabb_scheduler.errors
 
 class monicaPoint:
     def __init__(self, info={}):
