@@ -361,15 +361,18 @@ class schedule:
                 tband = self.scans[i - 1].IF1().getFrequencyBand()
                 nband = self.scans[i].IF1().getFrequencyBand()
                 if tband != nband and (tband == "4cm" or nband == "4cm"):
-                    # Add a focus scan after this scan.
-                    nscanId = self.scans[i].getId()
-                    self.copyScans(ids=[nscanId], pos=i, calCheck=False)
-                    # Change the name of this scan and add a focus command.
-                    self.scans[i].setSource("focus")
-                    self.scans[i].setCommand("focus default")
-                    # Change it to be 90 seconds long and a Normal type.
-                    self.scans[i].setScanType("Normal")
-                    self.scans[i].setScanLength("00:01:30")
+                    # Check first to see if a focus command is already present.
+                    ncmd = self.scans[i].getCommand()
+                    if "foc" not in ncmd:
+                        # Add a focus scan after this scan.
+                        nscanId = self.scans[i].getId()
+                        self.copyScans(ids=[nscanId], pos=i, calCheck=False)
+                        # Change the name of this scan and add a focus command.
+                        self.scans[i].setSource("focus")
+                        self.scans[i].setCommand("focus default")
+                        # Change it to be 90 seconds long and a Normal type.
+                        self.scans[i].setScanType("Normal")
+                        self.scans[i].setScanLength("00:01:30")
                 i += 1
         # If we're looping, we may need to add a focus scan at the start as well.
         if self.looping:
