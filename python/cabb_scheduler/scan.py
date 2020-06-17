@@ -241,6 +241,8 @@ class scan:
 
     def setAveraging(self, averaging=None):
         if averaging is not None:
+            # Ensure we look at integers.
+            averaging = int(averaging)
             if averaging > 0:
                 self.__scanDetails['averaging'] = averaging
             else:
