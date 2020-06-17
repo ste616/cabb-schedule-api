@@ -100,6 +100,15 @@ class schedule:
 
     def getNumberOfScans(self):
         return len(self.scans)
+
+    def getObservedBands(self):
+        # Work out which bands will be observed by this schedule.
+        observedBands = []
+        for i in range(0, len(self.scans)):
+            tband = self.scans[i].IF1().getFrequencyBand()
+            if tband not in observedBands:
+                observedBands.append(tband)
+        return observedBands
     
     def enableAutoCalibrators(self):
         # Enable the calibrator scan checking function.
@@ -338,7 +347,42 @@ class schedule:
                         self.copyScans([ self.calibratorAssociations[tId] ], (i + 1), False)
             i += 1
         return
-                
+
+    def completeSchedule(self):
+        # Go through the schedule and make the schedule "work".
+        # First, we work out if the schedule wants more than one band.
+        observedBands = self.getObservedBands()
+        # Check 1: add focus scans when the frequency configuration changes.
+        # We will only need to do focus scans if we change to or from 4cm.
+        if len(observedBands) > 1 and "4cm" in observedBands:
+            # Find the transition points.
+            i = 1
+            while i < len(self.scans):
+                tband = self.scans[i - 1].IF1().getFrequencyBand()
+                nband = self.scans[i].IF1().getFrequencyBand()
+                if tband != nband and (tband == "4cm" or nband == "4cm"):
+                    # Add a focus scan after this scan.
+                    nscanId = self.scans[i].getId()
+                    self.copyScans(ids=[nscanId], pos=i, calCheck=False)
+                    # Change the name of this scan and add a focus command.
+                    self.scans[i].setSource("focus")
+                    self.scans[i].setCommand("focus default")
+                    # Change it to be 90 seconds long and a Normal type.
+                    self.scans[i].setScanType("Normal")
+                    self.scans[i].setScanLength("00:01:30")
+                i += 1
+        # If we're looping, we may need to add a focus scan at the start as well.
+        if self.looping:
+            tband = self.scans[0].IF1().getFrequencyBand()
+            nband = self.scans[len(self.scans) - 1].IF1().getFrequencyBand()
+            if tband != nband and (tband == "4cm" or nband == "4cm"):
+                nscanId = self.scans[0].getId()
+                self.copyScans(ids=[nscanId], pos=0, calCheck=False)
+                self.scans[0].setSource("focus")
+                self.scans[0].setCommand("focus default")
+                self.scans[0].setScanType("Normal")
+                self.scans[0].setScanLength("00:01:30")
+    
     def __outputScheduleLine(self, s, o, p, fn, fm):
         # Generic checker for line output to schedule.
         if (p is None) or (getattr(o, fn)() !=
