@@ -277,7 +277,7 @@ class schedule:
                     oopts[option] = getattr(getattr(scan, freqObject)(), "getZoomChannel")(z)
         return oopts
     
-    def copyScans(self, ids=[], pos=None, calCheck=True):
+    def copyScans(self, ids=[], pos=None, calCheck=True, keepId=True):
         # Copy the scans specified by their IDs and put the copies beginning at
         # the nominated position (or at the end by default).
         if len(ids) == 0:
@@ -292,8 +292,9 @@ class schedule:
                 if pos is not None and pos >= 0 and pos < len(self.scans):
                     copts['insertIndex'] = pos + j
                 nscan = self.addScan(copts)
-                # Set its ID.
-                nscan.setId(cscan.getId())
+                if keepId:
+                    # Set its ID.
+                    nscan.setId(cscan.getId())
                 # We do this because j only increments when a scan is found.
                 j += 1
         if calCheck == True:
@@ -385,7 +386,7 @@ class schedule:
             nband = self.scans[len(self.scans) - 1].IF1().getFrequencyBand()
             if tband != nband and (tband == "4cm" or nband == "4cm"):
                 nscanId = self.scans[0].getId()
-                self.copyScans(ids=[nscanId], pos=0, calCheck=False)
+                self.copyScans(ids=[nscanId], pos=0, calCheck=False, keepId=False)
                 self.scans[0].setSource("focus")
                 self.scans[0].setCommand("focus default")
                 self.scans[0].setScanType("Normal")
