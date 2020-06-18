@@ -373,6 +373,7 @@ class schedule:
                         # Change it to be 90 seconds long and a Normal type.
                         self.scans[i].setScanType("Normal")
                         self.scans[i].setScanLength("00:01:30")
+                        self.scans[i].setComment("bandchange")
                 i += 1
         # If we're looping, we may need to add a focus scan at the start as well.
         if self.looping:
@@ -385,7 +386,6 @@ class schedule:
                 self.scans[0].setCommand("focus default")
                 self.scans[0].setScanType("Normal")
                 self.scans[0].setScanLength("00:01:30")
-                self.scans[0].setComment("bandchange")
     
     def __outputScheduleLine(self, s, o, p, fn, fm):
         # Generic checker for line output to schedule.
