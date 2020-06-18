@@ -359,39 +359,45 @@ class schedule:
             # Find the transition points.
             i = 1
             while i < len(self.scans):
-                print("[completeSchedule] schedule now has %d scans" % len(self.scans))
+                #print("[completeSchedule] schedule now has %d scans" % len(self.scans))
                 tband = self.scans[i - 1].IF1().getFrequencyBand()
                 nband = self.scans[i].IF1().getFrequencyBand()
                 if tband != nband and (tband == "4cm" or nband == "4cm"):
-                    print("[completeSchedule] found band change between %d and %d" % ((i - 1), i))
-                    pscan = self.scans[i - 1]
-                    nscan = self.scans[i]
-                    print("[completeSchedule] scan %d: %s %d/%d <%s> [%s] '%s'" % ((i - 1), pscan.getSource(),
-                                                                                   pscan.IF1().getFreq(),
-                                                                                   pscan.IF2().getFreq,
-                                                                                   pscan.getId(), pscan.getCommand(),
-                                                                                   pscan.getComment()))
-                    print("[completeSchedule] scan %d: %s %d/%d <%s> [%s] '%s'" % (i, nscan.getSource(),
-                                                                                   nscan.IF1().getFreq(),
-                                                                                   nscan.IF2().getFreq,
-                                                                                   nscan.getId(), nscan.getCommand(),
-                                                                                   nscan.getComment()))
+                    #print("[completeSchedule] found band change between %d and %d" % ((i - 1), i))
+                    #pscan = self.scans[i - 1]
+                    #nscan = self.scans[i]
+                    #print("[completeSchedule] scan %d: %s %d/%d <%s> [%s] '%s'" % ((i - 1), pscan.getSource(),
+                    #                                                               pscan.IF1().getFreq(),
+                    #                                                               pscan.IF2().getFreq(),
+                    #                                                               pscan.getId(), pscan.getCommand(),
+                    #                                                               pscan.getComment()))
+                    #print("[completeSchedule] scan %d: %s %d/%d <%s> [%s] '%s'" % (i, nscan.getSource(),
+                    #                                                               nscan.IF1().getFreq(),
+                    #                                                               nscan.IF2().getFreq(),
+                    #                                                               nscan.getId(), nscan.getCommand(),
+                    #                                                               nscan.getComment()))
                     
                     # Check first to see if a focus command is already present.
                     ncmd = self.scans[i].getCommand()
-                    print("[completeSchedule] command in current scan [%s]" % ncmd)
+                    #print("[completeSchedule] command in current scan [%s]" % ncmd)
                     if "foc" not in ncmd:
                         # Add a focus scan after this scan.
+                        # We have to keep the frequencies here, because of the way IDs work.
+                        nf1 = self.scans[i].IF1().getFreq()
+                        nf2 = self.scans[i].IF2().getFreq()
                         nscanId = self.scans[i].getId()
-                        print("[completeSchedule] copying scan %d" % i)
-                        self.copyScans(ids=[nscanId], pos=i, calCheck=False)
+                        #print("[completeSchedule] copying scan %d" % i)
+                        self.copyScans(ids=[nscanId], pos=i, calCheck=False, keepId=False)
                         # Change the name of this scan and add a focus command.
                         self.scans[i].setSource("focus")
                         self.scans[i].setCommand("focus default")
+                        # Ensure the right frequencies.
+                        self.scans[i].IF1().setFreq(nf1)
+                        self.scans[i].IF2().setFreq(nf2)
                         # Change it to be 90 seconds long and a Normal type.
                         self.scans[i].setScanType("Normal")
                         self.scans[i].setScanLength("00:01:30")
-                        self.scans[i].setComment("bandchange")
+                        #self.scans[i].setComment("bandchange")
                 i += 1
         # If we're looping, we may need to add a focus scan at the start as well.
         if self.looping:
