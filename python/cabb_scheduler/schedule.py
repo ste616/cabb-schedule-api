@@ -385,6 +385,7 @@ class schedule:
                 self.scans[0].setCommand("focus default")
                 self.scans[0].setScanType("Normal")
                 self.scans[0].setScanLength("00:01:30")
+                self.scans[0].setComment("bandchange")
     
     def __outputScheduleLine(self, s, o, p, fn, fm):
         # Generic checker for line output to schedule.
