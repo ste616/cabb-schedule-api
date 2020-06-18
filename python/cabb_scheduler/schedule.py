@@ -364,6 +364,19 @@ class schedule:
                 nband = self.scans[i].IF1().getFrequencyBand()
                 if tband != nband and (tband == "4cm" or nband == "4cm"):
                     print("[completeSchedule] found band change between %d and %d" % ((i - 1), i))
+                    pscan = self.scans[i - 1]
+                    nscan = self.scans[i]
+                    print("[completeSchedule] scan %d: %s %d/%d <%s> [%s] '%s'" % ((i - 1), pscan.getSource(),
+                                                                                   pscan.IF1().getFreq(),
+                                                                                   pscan.IF2().getFreq,
+                                                                                   pscan.getId(), pscan.getCommand(),
+                                                                                   pscan.getComment()))
+                    print("[completeSchedule] scan %d: %s %d/%d <%s> [%s] '%s'" % (i, nscan.getSource(),
+                                                                                   nscan.IF1().getFreq(),
+                                                                                   nscan.IF2().getFreq,
+                                                                                   nscan.getId(), nscan.getCommand(),
+                                                                                   nscan.getComment()))
+                    
                     # Check first to see if a focus command is already present.
                     ncmd = self.scans[i].getCommand()
                     print("[completeSchedule] command in current scan [%s]" % ncmd)
