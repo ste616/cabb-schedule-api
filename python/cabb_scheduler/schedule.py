@@ -358,14 +358,18 @@ class schedule:
             # Find the transition points.
             i = 1
             while i < len(self.scans):
+                print("[completeSchedule] schedule now has %d scans" % len(self.scans))
                 tband = self.scans[i - 1].IF1().getFrequencyBand()
                 nband = self.scans[i].IF1().getFrequencyBand()
                 if tband != nband and (tband == "4cm" or nband == "4cm"):
+                    print("[completeSchedule] found band change between %d and %d" % (i - 1), i)
                     # Check first to see if a focus command is already present.
                     ncmd = self.scans[i].getCommand()
+                    print("[completeSchedule] command in current scan [%s]" % ncmd)
                     if "foc" not in ncmd:
                         # Add a focus scan after this scan.
                         nscanId = self.scans[i].getId()
+                        print("[completeSchedule] copying scan %d" % i)
                         self.copyScans(ids=[nscanId], pos=i, calCheck=False)
                         # Change the name of this scan and add a focus command.
                         self.scans[i].setSource("focus")
