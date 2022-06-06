@@ -1,6 +1,6 @@
 # A scan has several required fields.
 from cabb_scheduler.frequency_setup import frequency_setup
-import cabb_scheduler.errors
+from cabb_scheduler.errors import ScanError
 import re
 import cabb_scheduler.calibrator_database as calibrator_database
 from random import choice
@@ -47,7 +47,7 @@ class scan:
         if nId is not None and len(nId) == idLength:
             self.__scanDetails['id'] = nId
         return self
-    
+
     def getSource(self):
         return self.__scanDetails['source']
 
@@ -62,7 +62,7 @@ class scan:
 
     def getCalCode(self):
         return self.__scanDetails['calCode']
-    
+
     def getScanLength(self):
         return self.__scanDetails['scanLength']
 
@@ -154,14 +154,14 @@ class scan:
                 return -1
             else:
                 return -1
-    
+
     def setSource(self, source_name=None):
         if source_name is not None:
             # Check for maximum length.
             if len(source_name) <= 10:
                 self.__scanDetails['source'] = source_name
             else:
-                raise errors.ScanError("Specified source name is too long.")
+                raise ScanError("Specified source name is too long.")
         return self
 
     def setRightAscension(self, ra=None):
@@ -179,15 +179,15 @@ class scan:
             if epoch == "J2000" or epoch == "B1950" or epoch == "AzEl" or epoch == "Galactic":
                 self.__scanDetails['epoch'] = epoch
             else:
-                raise errors.ScanError("Unrecognised epoch specified.")
+                raise ScanError("Unrecognised epoch specified.")
         return self
-        
+
     def setCalCode(self, calCode=None):
         if calCode is not None:
             if calCode == "" or calCode == "C" or calCode == "B":
                 self.__scanDetails['calCode'] = calCode
             else:
-                raise errors.ScanError("Unrecognised CalCode specified.")
+                raise ScanError("Unrecognised CalCode specified.")
         return self
 
     def setScanLength(self, scanLength=None):
@@ -200,7 +200,7 @@ class scan:
             if scanType == "Normal" or scanType == "Dwell" or scanType == "Mosaic" or scanType == "Point" or scanType == "Paddle" or scanType == "OTFMos":
                 self.__scanDetails['scanType'] = scanType
             else:
-                raise errors.ScanError("Unrecognised ScanType specified.")
+                raise ScanError("Unrecognised ScanType specified.")
         return self
 
     def setPointing(self, pointing=None):
@@ -208,7 +208,7 @@ class scan:
             if pointing == "Global" or pointing == "Offset" or pointing == "Offpnt" or pointing == "Refpnt" or pointing == "Update":
                 self.__scanDetails['pointing'] = pointing
             else:
-                raise errors.ScanError("Unrecognised Pointing specified.")
+                raise ScanError("Unrecognised Pointing specified.")
         return self
 
     def setObserver(self, observer=None):
@@ -231,7 +231,7 @@ class scan:
             if timeCode == "LST" or timeCode == "UTC":
                 self.__scanDetails['timeCode'] = timeCode
             else:
-                raise errors.ScanError("Unrecognised TimeCode specified.")
+                raise ScanError("Unrecognised TimeCode specified.")
         return self
 
     def setDate(self, startDate=None):
@@ -246,7 +246,7 @@ class scan:
             if averaging > 0:
                 self.__scanDetails['averaging'] = averaging
             else:
-                raise errors.ScanError("Averaging must be a positive, non-zero number.")
+                raise ScanError("Averaging must be a positive, non-zero number.")
         return self
 
     def setEnvironment(self, environment=None):
@@ -254,7 +254,7 @@ class scan:
             if environment >= 0 and environment < 128:
                 self.__scanDetails['environment'] = environment
             else:
-                raise errors.ScanError("Environment must be an integer between 0 and 127 inclusive.")
+                raise ScanError("Environment must be an integer between 0 and 127 inclusive.")
         return self
 
     def setPointingOffset1(self, offset=None):
@@ -273,7 +273,7 @@ class scan:
             if (r.match(tvchan) is not None) or (tvchan == 'default') or (tvchan == '') or (tvchan == 'null'):
                 self.__scanDetails['tvChannels'] = tvchan
             else:
-                raise errors.ScanError("TV Channel specification is incorrect.")
+                raise ScanError("TV Channel specification is incorrect.")
         return self
 
     def setCommand(self, cmd=None):
@@ -293,7 +293,7 @@ class scan:
             if (r1.match(config) is not None) or (r2.match(config) is not None) or (config == "null"):
                 self.__scanDetails['freqConfig'] = config
             else:
-                raise errors.ScanError("Frequency configuration is incorrectly specified.")
+                raise ScanError("Frequency configuration is incorrectly specified.")
         return self
 
     def setComment(self, comment=None):
@@ -306,10 +306,10 @@ class scan:
             if (wrap == "North") or (wrap == "South") or (wrap == "Closest"):
                 self.__scanDetails['wrap'] = wrap
             else:
-                raise errors.ScanError("Wrap is incorrectly specified.")
+                raise ScanError("Wrap is incorrectly specified.")
         return self
 
     def findCalibrator(self, distance=20):
         # Search the ATCA calibrator database for a nearby calibrator.
         return calibrator_database.coneSearch(self.getRightAscension(), self.getDeclination(), distance)
-        
+
