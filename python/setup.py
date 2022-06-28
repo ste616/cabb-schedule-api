@@ -6,7 +6,7 @@ from setuptools import setup
 # Jamie.Stevens@csiro.au
 
 setup(name='cabb_scheduler',
-      version='1.5',
+      version='1.6',
       description='CABB Scheduling Python Library',
       url='https://github.com/ste616/cabb-schedule-api',
       author='Jamie Stevens',
@@ -29,3 +29,4 @@ setup(name='cabb_scheduler',
 # 2017-03-28, v1.4: Add a check for non-valid MoniCA point names so it doesn't die
 #    when they are encountered. Add a switch to prevent a calibrator being put
 #    before the source, so the user can elect to get on source as soon as possible.
+# 2022-06-22, v1.6: Add automatic delay calibration scans when asked.

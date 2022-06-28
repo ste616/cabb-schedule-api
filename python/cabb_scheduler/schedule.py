@@ -2,6 +2,7 @@
 # doesn't do much. But we do keep track of certain constants.
 from cabb_scheduler.scan import scan
 import re
+import math
 
 class schedule:
     # A list of all the fields we need to know about.
@@ -75,10 +76,24 @@ class schedule:
     def __init__(self):
         # This is the list of scans, in order.
         self.scans = []
+        # Indicator of if the schedule is to be executed like 1/99 (True) or not.
         self.looping = True
+        # Indicator of whether this library might need to check and determine
+        # calibrator positions.
         self.autoCals = True
+        # Indicator of if a calibrator needs to be observed before the first
+        # observation of a source.
         self.calFirst = True
+        # The dictionary of source/calibrator associations.
         self.calibratorAssociations = {}
+        # Indicator of if we need to insert a preparatory scan before the first
+        # scan.
+        self.prepScans = False
+        # Indicator of if we are to insert our automatic delay calibration
+        # scans at the appropriate points.
+        self.delayScans = False
+        # The lowest frequency band nominated to use pointing scans.
+        self.pointingLowBand = "7mm"
         return None
 
     def clear(self):
@@ -135,7 +150,32 @@ class schedule:
     def autoCalibrators(self):
         # Return the state of the auto calibration mode.
         return self.autoCals
-    
+
+    def enablePrepScans(self):
+        # Ensure any focus commands etc. are done at the start.
+        self.prepScans = True
+        return self
+
+    def disablePrepScans(self):
+        self.prepScans = False
+        return self
+
+    def enableDelayCal(self):
+        # Insert automatic delay calibration scans before each
+        # frequency.
+        self.delayScans = True
+        return self
+
+    def disableDelayCal(self):
+        self.delayScans = False
+        return self
+
+    def setPointingLowBand(self, band=None):
+        if band is not None and (band == "16cm" or band == "4cm" or
+                                 band == "15mm" or band == "7mm" or band == "3mm"):
+            self.pointingLowBand = band
+        return self
+
     def __prepareValue(self, value, vtype):
         if vtype == "integer":
             return int(value)
@@ -353,7 +393,184 @@ class schedule:
         # Go through the schedule and make the schedule "work".
         # First, we work out if the schedule wants more than one band.
         observedBands = self.getObservedBands()
-        # Check 1: add focus scans when the frequency configuration changes.
+        # Check 1: If we're looping, we may need to add a focus scan at the start.
+        # But first, we don't need to do a prep focus scan if we're also doing delay calibration
+        # scans.
+        if self.prepScans and self.delayScans:
+            self.prepScans = False
+        
+        if self.looping or self.prepScans:
+            tband = self.scans[0].IF1().getFrequencyBand()
+            nband = self.scans[len(self.scans) - 1].IF1().getFrequencyBand()
+            if (tband != nband and (tband == "4cm" or nband == "4cm")) or self.prepScans:
+                nscanId = self.scans[0].getId()
+                self.copyScans(ids=[nscanId], pos=0, calCheck=False, keepId=False)
+                self.scans[0].setSource("focus")
+                self.scans[0].setCommand("focus default")
+                self.scans[0].setScanType("Normal")
+                self.scans[0].setScanLength("00:01:30")
+
+        # Check 2: If we've been asked, we put automatic calibration scans before each
+        # frequency's first instance.
+        if self.delayScans:
+            # We start by putting calibration scans in.
+            insertCalScans = True
+            i = 0
+            while i < len(self.scans):
+                # Do a check to see if scans should go here.
+                if i > 0:
+                    tband1 = self.scans[i].IF1().getFreq()
+                    tband2 = self.scans[i].IF2().getFreq()
+                    lband1 = self.scans[i - 1].IF1().getFreq()
+                    lband2 = self.scans[i - 1].IF2().getFreq()
+                    if tband1 != lband1 or tband2 != lband2:
+                        insertCalScans = True
+                if insertCalScans:
+                    tscanId = self.scans[i].getId()
+                    # Ideally, we'd check that this is a calibrator with sufficient flux
+                    # density, but we will have to rely on the user to ensure this is
+                    # the case.
+                    # What we do depends on which CABB mode we are in.
+                    cWidth = self.scans[i].IF1().getChannelWidth()
+                    if cWidth == 1:
+                        # We insert 4 scans to do the calibration.
+                        # Scan 1.
+                        self.copyScans(ids=[tscanId], pos=0, calCheck=False, keepId=False)
+                        self.scans[0].setSource("delscan1")
+                        self.scans[0].setScanType("Normal")
+                        # We need 9 cycles, assuming 10s cycles for the 00:01:30.
+                        self.scans[0].setScanLength("00:01:30")
+                        self.scans[0].setCommand("foc def;set ref ca03;cor tvmed on on;cor tatts 20;wait 2;cor atts on")
+                        # Scan 2.
+                        self.copyScans(ids=[tscanId], pos=1, calCheck=False, keepId=False)
+                        self.scans[1].setSource("delscan2")
+                        self.scans[1].setScanType("Normal")
+                        # We need 4 cycles.
+                        self.scans[1].setScanLength("00:00:40")
+                        self.scans[1].setCommand("cor atts off;wait 2;cor reset delays;cor delavg 1;cor tvch 1140 1220 1140 1220")
+                        # Scan 3.
+                        self.copyScans(ids=[tscanId], pos=2, calCheck=False, keepId=False)
+                        self.scans[2].setSource("delscan3")
+                        self.scans[2].setScanType("Dwell")
+                        # We need 4 cycles, and need the antennas on source for the next scan.
+                        self.scans[2].setScanLength("00:00:40")
+                        self.scans[2].setCommand("cor fflag f1 def;cor fflag f2 def;cor fflag f1 birdies;cor fflag f2 birdies")
+                        # Scan 4.
+                        self.copyScans(ids=[tscanId], pos=3, calCheck=False, keepId=False)
+                        self.scans[3].setSource("delscan4")
+                        self.scans[3].setScanType("Dwell")
+                        # We need 21 cycles.
+                        self.scans[3].setScanLength("00:03:30")
+                        self.scans[3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+                    elif cWidth == 64:
+                        # We insert 4 scans to do the calibration.
+                        # Scan 1.
+                        self.copyScans(ids=[tscanId], pos=0, calCheck=False, keepId=False)
+                        self.scans[0].setSource("delscan1")
+                        self.scans[0].setScanType("Normal")
+                        # We need 4 cycles, assuming 10s cycles for the 00:00:40.
+                        self.scans[0].setScanLength("00:00:40")
+                        self.scans[0].setCommand("foc def;set ref ca03;cor tvmed on on;cor tatts 20;wait 2;cor atts on")
+                        # Scan 2.
+                        self.copyScans(ids=[tscanId], pos=1, calCheck=False, keepId=False)
+                        # We need to set up a width-1 zoom band in this scan which will be used for initial
+                        # delay calibration. Using channel 56 normally works fine.
+                        # But first we get rid of any zooms that are configured.
+                        for j in range(1, 16):
+                            self.scans[1].IF1().setZoomChannel(zoomnum=j, chan=0)
+                            self.scans[1].IF2().setZoomChannel(zoomnum=j, chan=0)
+                        self.scans[1].IF1().setZoomChannel(zoomnum=1, chan=56)
+                        self.scans[1].IF2().setZoomChannel(zoomnum=1, chan=56)
+                        self.scans[1].setSource("delscan2")
+                        self.scans[1].setScanType("Dwell")
+                        # We need 5 cycles, and need the antennas on source for the next scan.
+                        self.scans[1].setScanLength("00:00:40")
+                        self.scans[1].setCommand("cor atts off;wait 2;cor reset delays;cor delavg 1;")
+                        # We want to now copy this scan with its zoom configuration for the next scans.
+                        tscanId = self.scans[1].getId()
+                        # Scan 3.
+                        self.copyScans(ids=[tscanId], pos=2, calCheck=False, keepId=False)
+                        self.scans[2].setSource("delscan3")
+                        self.scans[2].setScanType("Dwell")
+                        # We need 4 cycles, and need the antennas on source for the next scan.
+                        self.scans[2].setScanLength("00:00:40")
+                        self.scans[2].setCommand("cor fflag f1 def;cor fflag f2 def;cor fflag f1 birdies;cor fflag f2 birdies")
+                        # Scan 4.
+                        self.copyScans(ids=[tscanId], pos=3, calCheck=False, keepId=False)
+                        self.scans[3].setSource("delscan4")
+                        self.scans[3].setScanType("Dwell")
+                        # We need 21 cycles.
+                        self.scans[3].setScanLength("00:03:30")
+                        self.scans[3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+
+        # Check 3: add pointing scans when required and change the pointing type for the
+        # scans that need it.
+        i = 0
+        lastBand = None
+        lastPointings = {}
+        while i < len(self.scans):
+            # Find a transition to a band that requires pointing corrections.
+            currentBand = self.scans[i].IF1().getFrequencyBand()
+            needsPointing = False
+            bandNeedsPointing = False
+            if ((self.pointingLowBand == "16cm") or
+                ((self.pointingLowBand == "4cm") and (currentBand != "16cm")) or
+                ((self.pointingLowBand == "15mm") and (currentBand != "16cm" and currentBand != "4cm")) or
+                ((self.pointingLowBand == "7mm") and (currentBand == "7mm" or currentBand == "3mm")) or
+                ((self.pointingLowBand == "3mm") and (currentBand == "3mm"))):
+                needsPointing = True
+                bandNeedsPointing = True
+            if needsPointing:
+                # Check this scan isn't already a pointing scan.
+                if self.scans[i].getScanType() == "Point":
+                    needsPointing = False
+            if needsPointing:
+                # Check if we've recently had a pointing scan.
+                pointingChecks = []
+                for s in lastPointings:
+                    pointCheck = False
+                    # Check that this scan is within a certain distance of the pointing scan.
+                    angDist = self.__angularDistance(scanOrig=lastPointings[s]["scan"],
+                                                     scanDest=i)
+                    if angDist > 20.0:
+                        # Too far away.
+                        pointCheck = True
+                    # Check if it has been too long since that scan.
+                    if lastPointings[s]["timeDelta"] > (70 * 60):
+                        # Too long ago.
+                        pointCheck = True
+                    pointingChecks.append(pointCheck)
+                if False in pointingChecks:
+                    # At least one pointing should be usable for this scan.
+                    needsPointing = False
+            if needsPointing:
+                # We add a pointing scan, if we are looking at a calibrator.
+                if self.scans[i].getCalCode() == "C":
+                    # This is a calibrator, but we check that its associated
+                    # source is next in the schedule.
+                    if i < (len(self.scans) - 1):
+                        nscanId = self.scans[i + 1].getId()
+                        if ((nscanId in self.calibratorAssociations and
+                             self.calibratorAssociations[nscanId] == self.scans[i].getId()) or
+                            (nscanId not in self.calibratorAssociations)):
+                            # Pointing will actually be useful here.
+                            self.copyScans(ids=[self.scans[i].getId()], pos=i, calCheck=False, keepId=False)
+                            self.scans[i].setScanType("Point")
+                            self.scans[i].setPointing("Update")
+                            lastPointings[self.scans[i].getSource()] = { "scan": i, "timeDelta": 0 }
+            elif bandNeedsPointing:
+                # Check this isn't a pointing already.
+                if self.scans[i].getScanType == "Point":
+                    # We just update the pointing  dictionary.
+                    lastPointings[self.scans[i].getSource()] = { "scan": i, "timeDelta": 0 }
+                else:
+                    # We change this scan to use "OffPnt" pointing type.
+                    self.scans[i].setPointing("Offpnt")
+            i += 1
+                
+                        
+        
+        # Check 4: add focus scans when the frequency configuration changes.
         # We will only need to do focus scans if we change to or from 4cm.
         if len(observedBands) > 1 and "4cm" in observedBands:
             # Find the transition points.
@@ -396,20 +613,12 @@ class schedule:
                         self.scans[i].IF2().setFreq(nf2)
                         # Change it to be 90 seconds long and a Normal type.
                         self.scans[i].setScanType("Normal")
+                        self.scans[i].setPointing("Global")
                         self.scans[i].setScanLength("00:01:30")
                         #self.scans[i].setComment("bandchange")
                 i += 1
-        # If we're looping, we may need to add a focus scan at the start as well.
-        if self.looping:
-            tband = self.scans[0].IF1().getFrequencyBand()
-            nband = self.scans[len(self.scans) - 1].IF1().getFrequencyBand()
-            if tband != nband and (tband == "4cm" or nband == "4cm"):
-                nscanId = self.scans[0].getId()
-                self.copyScans(ids=[nscanId], pos=0, calCheck=False, keepId=False)
-                self.scans[0].setSource("focus")
-                self.scans[0].setCommand("focus default")
-                self.scans[0].setScanType("Normal")
-                self.scans[0].setScanLength("00:01:30")
+
+
     
     def __outputScheduleLine(self, s, o, p, fn, fm):
         # Generic checker for line output to schedule.
@@ -525,3 +734,65 @@ class schedule:
             with open(name, 'r') as schedFile:
                 self.parse(schedFile.read())
         return self.getNumberOfScans()
+
+    def __durationSeconds(self, scan=None):
+        # Return the duration of the nominated scan in seconds.
+        durSeconds = 0
+        if scan is not None and scan >= 0 and scan < len(self.scans):
+            durString = self.scans[i].getScanLength()
+            durEls = durString.split(":")
+            durSeconds = int(durEls[0]) * 3600 + int(durEls[1]) * 60 + int(durEls[2])
+        return durSeconds
+
+    def __angleRadians(self, scan=None):
+        # Return the right ascension and declination as radian angles.
+        if scan is not None and scan >= 0 and scan < len(self.scans):
+            raString = self.scans[scan].getRightAscension()
+            decString = self.scans[scan].getDeclination()
+            raEls = raString.split(":")
+            decEls = decString.split(":")
+            raRads = (math.pi / 180.0) * 15.0 * (float(raEls[0]) + float(raEls[1]) / 60.0 +
+                                                 float(raEls[2]) / 3600.0)
+            decSign = 1.0
+            decPattern = re.compile("^\-")
+            if decPattern.match(decString):
+                decSign = -1.0
+            decRads = decSign * (math.pi / 180.0) * (decSign * float(decEls[0]) +
+                                                     float(decEls[1]) / 60.0 + float(decEls[2]) / 3600.0)
+            return { "rightAscension": raRads, "declination": decRads }
+        return { "rightAscension": None, "declination": None }
+
+    def __angularDistance(self, scanOrig=None, scanDest=None):
+        # Return the angular distance between the original scan and the destination
+        # scan, in degrees.
+        if (scanOrig is not None and scanOrig >= 0 and scanOrig < len(self.scans) and
+            scanDest is not None and scanDest >= 0 and scanDest < len(self.scans)):
+            # We don't need to be particularly sophisticated in our approach here,
+            # because we just need a rough estimate of the distance.
+            if scanOrig == scanDest:
+                # Obviously 0.
+                return 0
+            scanOrigCoord = self.__angleRadians(scan=scanOrig)
+            scanDestCoord = self.__angleRadians(scan=scanDest)
+            if (scanOrigCoord["rightAscension"] is not None and
+                scanDestCoord["rightAscension"] is not None):
+                try:
+                    angDist = math.acos(math.sin(scanOrigCoord["declination"]) *
+                                        math.sin(scanDestCoord["declination"]) +
+                                        math.cos(scanOrigCoord["declination"]) *
+                                        math.cos(scanDestCoord["declination"]) *
+                                        math.cos(scanDestCoord["rightAscension"] -
+                                                 scanOrigCoord["rightAscension"]))
+                except ValueError as e:
+                    print ("got value error")
+                    print ("original coordinates RA = %.4f (%s) Dec = %.4f (%s)" %
+                           (scanOrigCoord["rightAscension"], self.scans[scanOrig].getRightAscension(),
+                            scanOrigCoord["declination"], self.scans[scanOrig].getDeclination()))
+                    print ("destination coordinates RA = %.4f (%s) Dec = %.4f (%s)" %
+                           (scanDestCoord["rightAscension"], self.scans[scanDest].getRightAscension(),
+                            scanDestCoord["declination"], self.scans[scanDest].getDeclination()))
+                    angDist = 0.0
+                return angDist * 180.0 / math.pi
+        return None
+    
+        
