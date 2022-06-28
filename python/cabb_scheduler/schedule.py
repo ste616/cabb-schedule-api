@@ -513,11 +513,7 @@ class schedule:
             currentBand = self.scans[i].IF1().getFrequencyBand()
             needsPointing = False
             bandNeedsPointing = False
-            if ((self.pointingLowBand == "16cm") or
-                ((self.pointingLowBand == "4cm") and (currentBand != "16cm")) or
-                ((self.pointingLowBand == "15mm") and (currentBand != "16cm" and currentBand != "4cm")) or
-                ((self.pointingLowBand == "7mm") and (currentBand == "7mm" or currentBand == "3mm")) or
-                ((self.pointingLowBand == "3mm") and (currentBand == "3mm"))):
+            if self.needsPointing(band=currentBand):
                 needsPointing = True
                 bandNeedsPointing = True
             if needsPointing:
@@ -557,6 +553,7 @@ class schedule:
                             self.copyScans(ids=[self.scans[i].getId()], pos=i, calCheck=False, keepId=False)
                             self.scans[i].setScanType("Point")
                             self.scans[i].setPointing("Update")
+                            self.scans[i].setScanLength("00:02:00")
                             lastPointings[self.scans[i].getSource()] = { "scan": i, "timeDelta": 0 }
             elif bandNeedsPointing:
                 # Check this isn't a pointing already.
@@ -566,6 +563,9 @@ class schedule:
                 else:
                     # We change this scan to use "OffPnt" pointing type.
                     self.scans[i].setPointing("Offpnt")
+            # Increment the time since last pointing.
+            for j in lastPointings:
+                lastPointings[j]['timeDelta'] += self.__durationSeconds(scan=i)
             i += 1
                 
                         
@@ -739,7 +739,7 @@ class schedule:
         # Return the duration of the nominated scan in seconds.
         durSeconds = 0
         if scan is not None and scan >= 0 and scan < len(self.scans):
-            durString = self.scans[i].getScanLength()
+            durString = self.scans[scan].getScanLength()
             durEls = durString.split(":")
             durSeconds = int(durEls[0]) * 3600 + int(durEls[1]) * 60 + int(durEls[2])
         return durSeconds
@@ -795,4 +795,20 @@ class schedule:
                 return angDist * 180.0 / math.pi
         return None
     
-        
+    def needsPointing(self, band=None):
+        # Return indication of whether the specified band needs a pointing in this
+        # schedule.
+        if band is None:
+            return False
+        if (band is not "16cm" and band is not "4cm" and band is not "15mm" and
+            band is not "7mm" and band is not "3mm"):
+            # Unrecognised band name.
+            return False
+        if ((self.pointingLowBand == "16cm") or
+            ((self.pointingLowBand == "4cm") and (band != "16cm")) or
+            ((self.pointingLowBand == "15mm") and (band != "16cm" and band != "4cm")) or
+            ((self.pointingLowBand == "7mm") and (band == "7mm" or band == "3mm")) or
+            ((self.pointingLowBand == "3mm") and (band == "3mm"))):
+            return True
+        return False
+    

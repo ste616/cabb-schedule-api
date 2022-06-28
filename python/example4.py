@@ -260,6 +260,8 @@ if __name__ == "__main__":
                           "calCode": "C",
                           "scanType": "Dwell", "scanLength": "00:05:00" })
             fluxCalAdded = True
+            # Allow for slewing, focus, pointing.
+            timeConsumed += len(bandsRequested) * 15.0 / 60.0
         for i in range(0, len(bandsRequested)):
             b = bandsRequested[i]
             if (b in requestDict and "use" in requestDict[b] and
@@ -267,6 +269,7 @@ if __name__ == "__main__":
                 # Check if we've already worked out how to schedule this.
                 bandComplete = False
                 bandCompleteId = None
+                freqLength = stringTimeToDelta(requestDict[b]["exposureLength"])
                 for j in range(0, len(bandScans1)):
                     if (bandScans1[j].getSource() == requestDict["source"] and
                         bandScans1[j].IF1().getFreq() == requestDict[b]["freq1"] and
@@ -281,7 +284,6 @@ if __name__ == "__main__":
                         schedule1.copyScans([ bandCompleteId ])
                 else:
                     # We need to work out how long to make each scan.
-                    freqLength = stringTimeToDelta(requestDict[b]["exposureLength"])
                     nReps = 1
                     compLength = ((nReps * datetime.timedelta(seconds=bandMaxScanLengths[b]) +
                                    (nReps * 2) * datetime.timedelta(seconds=calibratorScanLengths)))
@@ -309,8 +311,16 @@ if __name__ == "__main__":
                     # Repeat this the appropriate number of times.
                     for j in range(1, nReps):
                         schedule1.copyScans([ bandScans1[-1].getId() ])
+                # Allow for 20s slews.
                 timeConsumed += ((nReps * stringTimeToHours(dwellLength)) +
+                                 (nReps * 2 * 20.0 / 3600.0) +
                                  ((nReps + 1) * calibratorScanLengths / 3600.0))
+                # If we're in a pointing band, allow a bit of extra time per hour.
+                if schedule1.needsPointing(b):
+                    timeConsumed += (2.0 / 60.0)
+                # Add some time for focusing.
+                timeConsumed += 2.0 / 60.0
+                
     if not fluxCalAdded:
         # We have to put the flux calibrators at the end.
         for i in range(0, len(bandsRequested)):
@@ -329,4 +339,6 @@ if __name__ == "__main__":
 
     # Output the schedule.
     schedule1.completeSchedule()
+    # Set the LST of the first scan.
+    schedule1.getScan(idx=0).setTime(startLst)
     schedule1.write(name="c006_magnetar_example4_test1.sch")
