@@ -70,7 +70,11 @@ class schedule:
 
     __freqHandlers = {
         'Freq-1': { 'format': "integer", 'get': "getFreq", 'set': "setFreq", 'object': "IF1", 'option': "freq1" },
-        'Freq-2': { 'format': "integer", 'get': "getFreq", 'set': "setFreq", 'object': "IF2", 'option': "freq2" }
+        'Freq-2': { 'format': "integer", 'get': "getFreq", 'set': "setFreq", 'object': "IF2", 'option': "freq2" },
+        'ChnBW-1': { 'format': "integer", 'get': "getChannelWidth", 'set': "setChannelWidth",
+                  'object': "IF1", 'option': "bw1" },
+        'ChnBW-2': { 'format': "integer", 'get': "getChannelWidth", 'set': "setChannelWidth",
+                  'object': "IF2", 'option': "bw2" }
     }
 
     def __init__(self):
@@ -416,6 +420,8 @@ class schedule:
             # We start by putting calibration scans in.
             insertCalScans = True
             i = 0
+            # Keep track of which frequency setups have been configured already.
+            configured = []
             while i < len(self.scans):
                 # Do a check to see if scans should go here.
                 if i > 0:
@@ -425,6 +431,14 @@ class schedule:
                     lband2 = self.scans[i - 1].IF2().getFreq()
                     if tband1 != lband1 or tband2 != lband2:
                         insertCalScans = True
+                        # Check the configurations already done.
+                        for j in range(0, len(configured)):
+                            if configured[j][0] == tband1 and configured[j][1] == tband2:
+                                # Already done.
+                                insertCalScans = False
+                                break
+                    else:
+                        insertCalScans = False
                 if insertCalScans:
                     tscanId = self.scans[i].getId()
                     # Ideally, we'd check that this is a calibrator with sufficient flux
@@ -432,76 +446,82 @@ class schedule:
                     # the case.
                     # What we do depends on which CABB mode we are in.
                     cWidth = self.scans[i].IF1().getChannelWidth()
+                    tband1 = self.scans[i].IF1().getFreq()
+                    tband2 = self.scans[i].IF2().getFreq()
+                    configured.append([ tband1, tband2 ])
                     if cWidth == 1:
                         # We insert 4 scans to do the calibration.
                         # Scan 1.
-                        self.copyScans(ids=[tscanId], pos=0, calCheck=False, keepId=False)
-                        self.scans[0].setSource("delscan1")
-                        self.scans[0].setScanType("Normal")
+                        self.copyScans(ids=[tscanId], pos=i, calCheck=False, keepId=False)
+                        self.scans[i].setSource("delscan1")
+                        self.scans[i].setScanType("Normal")
                         # We need 9 cycles, assuming 10s cycles for the 00:01:30.
-                        self.scans[0].setScanLength("00:01:30")
-                        self.scans[0].setCommand("foc def;set ref ca03;cor tvmed on on;cor tatts 20;wait 2;cor atts on")
+                        self.scans[i].setScanLength("00:01:30")
+                        self.scans[i].setCommand("foc def;set ref ca03;cor tvmed on on;cor tatts 20;wait 2;cor atts on")
                         # Scan 2.
-                        self.copyScans(ids=[tscanId], pos=1, calCheck=False, keepId=False)
-                        self.scans[1].setSource("delscan2")
-                        self.scans[1].setScanType("Normal")
+                        self.copyScans(ids=[tscanId], pos=(i + 1), calCheck=False, keepId=False)
+                        self.scans[i + 1].setSource("delscan2")
+                        self.scans[i + 1].setScanType("Normal")
                         # We need 4 cycles.
-                        self.scans[1].setScanLength("00:00:40")
-                        self.scans[1].setCommand("cor atts off;wait 2;cor reset delays;cor delavg 1;cor tvch 1140 1220 1140 1220")
+                        self.scans[i + 1].setScanLength("00:00:40")
+                        self.scans[i + 1].setCommand("cor atts off;wait 2;cor reset delays;cor delavg 1;cor tvch 1140 1220 1140 1220")
                         # Scan 3.
-                        self.copyScans(ids=[tscanId], pos=2, calCheck=False, keepId=False)
-                        self.scans[2].setSource("delscan3")
-                        self.scans[2].setScanType("Dwell")
+                        self.copyScans(ids=[tscanId], pos=(i + 2), calCheck=False, keepId=False)
+                        self.scans[i + 2].setSource("delscan3")
+                        self.scans[i + 2].setScanType("Dwell")
                         # We need 4 cycles, and need the antennas on source for the next scan.
-                        self.scans[2].setScanLength("00:00:40")
-                        self.scans[2].setCommand("cor fflag f1 def;cor fflag f2 def;cor fflag f1 birdies;cor fflag f2 birdies")
+                        self.scans[i + 2].setScanLength("00:00:40")
+                        self.scans[i + 2].setCommand("cor fflag f1 def;cor fflag f2 def;cor fflag f1 birdies;cor fflag f2 birdies")
                         # Scan 4.
-                        self.copyScans(ids=[tscanId], pos=3, calCheck=False, keepId=False)
-                        self.scans[3].setSource("delscan4")
-                        self.scans[3].setScanType("Dwell")
+                        self.copyScans(ids=[tscanId], pos=(i + 3), calCheck=False, keepId=False)
+                        self.scans[i + 3].setSource("delscan4")
+                        self.scans[i + 3].setScanType("Dwell")
                         # We need 21 cycles.
-                        self.scans[3].setScanLength("00:03:30")
-                        self.scans[3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+                        self.scans[i + 3].setScanLength("00:03:30")
+                        self.scans[i + 3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+                        i += 4
                     elif cWidth == 64:
                         # We insert 4 scans to do the calibration.
                         # Scan 1.
-                        self.copyScans(ids=[tscanId], pos=0, calCheck=False, keepId=False)
-                        self.scans[0].setSource("delscan1")
-                        self.scans[0].setScanType("Normal")
+                        self.copyScans(ids=[tscanId], pos=i, calCheck=False, keepId=False)
+                        self.scans[i].setSource("delscan1")
+                        self.scans[i].setScanType("Normal")
                         # We need 4 cycles, assuming 10s cycles for the 00:00:40.
-                        self.scans[0].setScanLength("00:00:40")
-                        self.scans[0].setCommand("foc def;set ref ca03;cor tvmed on on;cor tatts 20;wait 2;cor atts on")
+                        self.scans[i].setScanLength("00:00:40")
+                        self.scans[i].setCommand("foc def;set ref ca03;cor tvmed on on;cor tatts 20;wait 2;cor atts on")
                         # Scan 2.
-                        self.copyScans(ids=[tscanId], pos=1, calCheck=False, keepId=False)
+                        self.copyScans(ids=[tscanId], pos=(i + 1), calCheck=False, keepId=False)
                         # We need to set up a width-1 zoom band in this scan which will be used for initial
                         # delay calibration. Using channel 56 normally works fine.
                         # But first we get rid of any zooms that are configured.
                         for j in range(1, 16):
-                            self.scans[1].IF1().setZoomChannel(zoomnum=j, chan=0)
-                            self.scans[1].IF2().setZoomChannel(zoomnum=j, chan=0)
-                        self.scans[1].IF1().setZoomChannel(zoomnum=1, chan=56)
-                        self.scans[1].IF2().setZoomChannel(zoomnum=1, chan=56)
-                        self.scans[1].setSource("delscan2")
-                        self.scans[1].setScanType("Dwell")
+                            self.scans[i + 1].IF1().setZoomChannel(zoomnum=j, chan=0)
+                            self.scans[i + 1].IF2().setZoomChannel(zoomnum=j, chan=0)
+                        self.scans[i + 1].IF1().setZoomChannel(zoomnum=1, chan=56)
+                        self.scans[i + 1].IF2().setZoomChannel(zoomnum=1, chan=56)
+                        self.scans[i + 1].setSource("delscan2")
+                        self.scans[i + 1].setScanType("Dwell")
                         # We need 5 cycles, and need the antennas on source for the next scan.
-                        self.scans[1].setScanLength("00:00:40")
-                        self.scans[1].setCommand("cor atts off;wait 2;cor reset delays;cor delavg 1;")
+                        self.scans[i + 1].setScanLength("00:00:40")
+                        self.scans[i + 1].setCommand("cor atts off;wait 2;cor reset delays;cor delavg 1;")
                         # We want to now copy this scan with its zoom configuration for the next scans.
-                        tscanId = self.scans[1].getId()
+                        tscanId = self.scans[i + 1].getId()
                         # Scan 3.
-                        self.copyScans(ids=[tscanId], pos=2, calCheck=False, keepId=False)
-                        self.scans[2].setSource("delscan3")
-                        self.scans[2].setScanType("Dwell")
+                        self.copyScans(ids=[tscanId], pos=(i + 2), calCheck=False, keepId=False)
+                        self.scans[i + 2].setSource("delscan3")
+                        self.scans[i + 2].setScanType("Dwell")
                         # We need 4 cycles, and need the antennas on source for the next scan.
-                        self.scans[2].setScanLength("00:00:40")
-                        self.scans[2].setCommand("cor fflag f1 def;cor fflag f2 def;cor fflag f1 birdies;cor fflag f2 birdies")
+                        self.scans[i + 2].setScanLength("00:00:40")
+                        self.scans[i + 2].setCommand("cor fflag f1 def;cor fflag f2 def;cor fflag f1 birdies;cor fflag f2 birdies")
                         # Scan 4.
-                        self.copyScans(ids=[tscanId], pos=3, calCheck=False, keepId=False)
-                        self.scans[3].setSource("delscan4")
-                        self.scans[3].setScanType("Dwell")
+                        self.copyScans(ids=[tscanId], pos=(i + 3), calCheck=False, keepId=False)
+                        self.scans[i + 3].setSource("delscan4")
+                        self.scans[i + 3].setScanType("Dwell")
                         # We need 21 cycles.
-                        self.scans[3].setScanLength("00:03:30")
-                        self.scans[3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+                        self.scans[i + 3].setScanLength("00:03:30")
+                        self.scans[i + 3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+                        i += 4
+                i += 1
 
         # Check 3: add pointing scans when required and change the pointing type for the
         # scans that need it.
@@ -509,6 +529,10 @@ class schedule:
         lastBand = None
         lastPointings = {}
         while i < len(self.scans):
+            # Don't do anything for delscan scans.
+            if "delscan" in self.scans[i].getSource():
+                i += 1
+                continue
             # Find a transition to a band that requires pointing corrections.
             currentBand = self.scans[i].IF1().getFrequencyBand()
             needsPointing = False
