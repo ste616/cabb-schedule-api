@@ -478,7 +478,7 @@ class schedule:
                         self.scans[i + 3].setScanType("Dwell")
                         # We need 21 cycles.
                         self.scans[i + 3].setScanLength("00:03:30")
-                        self.scans[i + 3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+                        self.scans[i + 3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;wait 12;cor delavg 64;wait 17;cor dcal")
                         i += 4
                     elif cWidth == 64:
                         # We insert 4 scans to do the calibration.
@@ -519,7 +519,7 @@ class schedule:
                         self.scans[i + 3].setScanType("Dwell")
                         # We need 21 cycles.
                         self.scans[i + 3].setScanLength("00:03:30")
-                        self.scans[i + 3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;waot 12;cor delavg 64;wait 17;cor dcal")
+                        self.scans[i + 3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;wait 12;cor delavg 64;wait 17;cor dcal")
                         i += 4
                 i += 1
 
