@@ -502,24 +502,24 @@ class schedule:
                         self.scans[i + 1].setSource("delscan2")
                         self.scans[i + 1].setScanType("Dwell")
                         # We need 5 cycles, and need the antennas on source for the next scan.
-                        self.scans[i + 1].setScanLength("00:00:40")
-                        self.scans[i + 1].setCommand("cor atts off;wait 2;cor reset delays;cor delavg 1;")
+                        self.scans[i + 1].setScanLength("00:00:50")
+                        self.scans[i + 1].setCommand("cor calband z z;cor reset delays;wait 1;cor delavg 8;wait 4;cor atts off")
                         # We want to now copy this scan with its zoom configuration for the next scans.
                         tscanId = self.scans[i + 1].getId()
                         # Scan 3.
                         self.copyScans(ids=[tscanId], pos=(i + 2), calCheck=False, keepId=False)
                         self.scans[i + 2].setSource("delscan3")
                         self.scans[i + 2].setScanType("Dwell")
-                        # We need 4 cycles, and need the antennas on source for the next scan.
-                        self.scans[i + 2].setScanLength("00:00:40")
-                        self.scans[i + 2].setCommand("cor fflag f1 def;cor fflag f2 def;cor fflag f1 birdies;cor fflag f2 birdies")
+                        # We need 12 cycles for the dcal.
+                        self.scans[i + 2].setScanLength("00:02:00")
+                        self.scans[i + 2].setCommand("cor tvch def;wait 7;cor dcal;wait 12;cor calband f f")
                         # Scan 4.
                         self.copyScans(ids=[tscanId], pos=(i + 3), calCheck=False, keepId=False)
                         self.scans[i + 3].setSource("delscan4")
                         self.scans[i + 3].setScanType("Dwell")
                         # We need 21 cycles.
                         self.scans[i + 3].setScanLength("00:03:30")
-                        self.scans[i + 3].setCommand("wait 7;cor dcal;wait 11;cor tvch def;wait 12;cor delavg 64;wait 17;cor dcal")
+                        self.scans[i + 3].setCommand("cor tvch def;wait 1;cor delavg 1;wait 7;cor dcal;wait 13;cor acal;wait 16;cor pcal")
                         i += 4
                 i += 1
 
